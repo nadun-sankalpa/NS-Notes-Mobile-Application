@@ -1,18 +1,22 @@
 import { View, Text } from 'react-native'
 import React from 'react'
-import { Slot, Stack } from 'expo-router'
+import { Slot, Stack, useRouter, useSegments } from 'expo-router'
 import "./../global.css"
-import { AuthProvider } from '@/context/AuthContext'
+import { AuthProvider } from '../context/AuthContext';
 import { LoaderProvider } from '@/context/LoaderContext (1)'
 import { BeautifulAlertProvider } from "@/components/BeautifulAlert"
+import { ThemeProvider } from '../context/ThemeContext';
 
 const RootLayout = () => {
+  // Remove auto-navigation to avoid navigation before mounting error
   return (
     <LoaderProvider>
       <AuthProvider>
-        <BeautifulAlertProvider>
-          <Slot/>
-        </BeautifulAlertProvider>
+        <ThemeProvider>
+          <BeautifulAlertProvider>
+            <Slot/>
+          </BeautifulAlertProvider>
+        </ThemeProvider>
       </AuthProvider>
     </LoaderProvider>
   )

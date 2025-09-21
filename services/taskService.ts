@@ -1,7 +1,8 @@
 import { Task } from "@/types/task";
 import api from "./config/api";
-import {addDoc, collection, doc, getDocs, updateDoc , getDoc, query, where} from "firebase/firestore";
+import {addDoc, collection, getDocs, updateDoc , getDoc, query, where} from "firebase/firestore";
 import { db } from "@/firebase";
+import { deleteDoc, doc } from "firebase/firestore";
 
 // export const getTasks = async () => {
 //     const res = await api.get("/task");
@@ -53,3 +54,14 @@ export const getAllTasksByUserId = async (userId: string) => {
     )) as Task[]
     return taskList
 }
+
+export const deleteTask = async (id: string) => {
+    try {
+        const docRef = doc(db, "tasks", id);
+        await deleteDoc(docRef);
+        return true;
+    } catch (err) {
+        console.error('Delete error:', err);
+        return false;
+    }
+};

@@ -1,11 +1,23 @@
-import { View, Text, Pressable, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, Dimensions, ActivityIndicator } from 'react-native'
-import React from 'react'
-import { useRouter } from 'expo-router'
-import { register } from '@/services/authService'
-import { BeautifulAlert } from "@/components/BeautifulAlert"
+import Animated, { FadeIn, SlideInUp, withRepeat, withTiming, useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
+import React from 'react';
+import {
+    View,
+    Text,
+    Pressable,
+    TextInput,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    Dimensions,
+    ActivityIndicator,
+    Image
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { register } from '@/services/authService';
+import { BeautifulAlert } from "@/components/BeautifulAlert";
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeIn, SlideInUp } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome } from '@expo/vector-icons';
 
 const { width, height } = Dimensions.get('window');
 
@@ -15,6 +27,33 @@ const Register = () => {
     const [password, setPassword] = React.useState("")
     const [confirmPassword, setConfirmPassword] = React.useState("")
     const [loading, setLoading] = React.useState(false)
+
+    // --- Live Animations ---
+    const bubble1Scale = useSharedValue(1);
+    const bubble2Scale = useSharedValue(1);
+    React.useEffect(() => {
+      bubble1Scale.value = withRepeat(withTiming(1.15, { duration: 2200 }), -1, true);
+      bubble2Scale.value = withRepeat(withTiming(1.1, { duration: 1800 }), -1, true);
+    }, []);
+    const bubble1Style = useAnimatedStyle(() => ({ transform: [{ scale: bubble1Scale.value }] }));
+    const bubble2Style = useAnimatedStyle(() => ({ transform: [{ scale: bubble2Scale.value }] }));
+    const formEntering = SlideInUp.springify().damping(12);
+    const [focusedInput, setFocusedInput] = React.useState<string | null>(null);
+    const getInputStyle = (name: string) => [
+      {
+        backgroundColor: 'white',
+        borderRadius: 12,
+        padding: 14,
+        marginBottom: 18,
+        borderColor: focusedInput === name ? '#19376d' : '#284b8a',
+        borderWidth: 1,
+        fontSize: 16,
+      },
+    ];
+    const buttonScale = useSharedValue(1);
+    const buttonAnimatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: buttonScale.value }] }));
+    const handleButtonPressIn = () => { buttonScale.value = withTiming(0.96, { duration: 100 }); };
+    const handleButtonPressOut = () => { buttonScale.value = withTiming(1, { duration: 100 }); };
 
     const handleRegister = async() => {
         if(email === "" || password === "" || confirmPassword === "") {
@@ -68,7 +107,8 @@ const Register = () => {
             {/* 3D Animated Bubbles */}
             <Animated.View
                 entering={FadeIn.duration(1200)}
-                style={{
+                style={[
+                  {
                     position: 'absolute',
                     top: -height * 0.15,
                     left: -width * 0.2,
@@ -82,11 +122,14 @@ const Register = () => {
                     shadowOpacity: 0.15,
                     shadowRadius: 30,
                     zIndex: 0,
-                }}
+                  },
+                  bubble1Style,
+                ]}
             />
             <Animated.View
                 entering={FadeIn.delay(400).duration(1500)}
-                style={{
+                style={[
+                  {
                     position: 'absolute',
                     bottom: -height * 0.18,
                     right: -width * 0.18,
@@ -100,7 +143,9 @@ const Register = () => {
                     shadowOpacity: 0.12,
                     shadowRadius: 30,
                     zIndex: 0,
-                }}
+                  },
+                  bubble2Style,
+                ]}
             />
             <KeyboardAvoidingView
                 behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -121,46 +166,79 @@ const Register = () => {
                 <View style={{ width: '90%', maxWidth: 400, backgroundColor: 'rgba(255,255,255,0.97)', borderRadius: 24, padding: 28, shadowColor: '#19376d', shadowOpacity: 0.09, shadowRadius: 18, elevation: 8 }}>
                     <Text style={{ color: '#19376d', fontSize: 22, fontWeight: '700', marginBottom: 18, textAlign: 'center' }}>Register</Text>
                     <TextInput
-                        style={{ backgroundColor: 'white', borderRadius: 12, padding: 14, marginBottom: 18, borderColor: '#284b8a', borderWidth: 1, fontSize: 16 }}
+                        style={getInputStyle('email')}
                         placeholder="Email"
                         placeholderTextColor="#284b8a"
                         value={email}
                         onChangeText={setEmail}
                         keyboardType="email-address"
                         autoCapitalize="none"
+                        onFocus={() => setFocusedInput('email')}
+                        onBlur={() => setFocusedInput(null)}
                     />
                     <TextInput
-                        style={{ backgroundColor: 'white', borderRadius: 12, padding: 14, marginBottom: 18, borderColor: '#284b8a', borderWidth: 1, fontSize: 16 }}
+                        style={getInputStyle('password')}
                         placeholder="Password"
                         placeholderTextColor="#284b8a"
                         value={password}
                         onChangeText={setPassword}
                         secureTextEntry
+                        onFocus={() => setFocusedInput('password')}
+                        onBlur={() => setFocusedInput(null)}
                     />
                     <TextInput
-                        style={{ backgroundColor: 'white', borderRadius: 12, padding: 14, marginBottom: 18, borderColor: '#284b8a', borderWidth: 1, fontSize: 16 }}
+                        style={getInputStyle('confirm')}
                         placeholder="Confirm Password"
                         placeholderTextColor="#284b8a"
                         value={confirmPassword}
                         onChangeText={setConfirmPassword}
                         secureTextEntry
+                        onFocus={() => setFocusedInput('confirm')}
+                        onBlur={() => setFocusedInput(null)}
                     />
-                    <Pressable
-                        style={{ backgroundColor: '#19376d', borderRadius: 14, paddingVertical: 14, marginBottom: 12, shadowColor: '#284b8a', shadowOpacity: 0.21, shadowRadius: 8, elevation: 4 }}
-                        onPress={handleRegister}
-                    >
-                        <Text style={{ color: 'white', fontSize: 18, fontWeight: 'bold', textAlign: 'center', letterSpacing: 1 }}>
-                            {loading ? <ActivityIndicator color="#fff" /> : 'Register'}
-                        </Text>
-                    </Pressable>
-                    <Pressable
-                        style={{ backgroundColor: '#4f8ef7', borderRadius: 14, paddingVertical: 12, marginBottom: 4 }}
+                    <Animated.View style={buttonAnimatedStyle}>
+                      <Pressable
+                          style={{ backgroundColor: '#19376d', borderRadius: 14, paddingVertical: 14, marginBottom: 12, shadowColor: '#284b8a', shadowOpacity: 0.21, shadowRadius: 8, elevation: 4 }}
+                          onPressIn={handleButtonPressIn}
+                          onPressOut={handleButtonPressOut}
+                          onPress={handleRegister}
+                      >
+                          <Text style={{ color: 'white', fontSize: 18, fontWeight: 'bold', textAlign: 'center', letterSpacing: 1 }}>
+                              {loading ? <ActivityIndicator color="#fff" /> : 'Register'}
+                          </Text>
+                      </Pressable>
+                    </Animated.View>
+                    {/* Social Sign-in Options */}
+                    <View style={{ width: '100%', alignItems: 'center', marginTop: 12, marginBottom: 8 }}>
+                      <Text style={{ color: '#19376d', marginBottom: 8, fontWeight: '600' }}>Or sign up with</Text>
+                      <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 16 }}>
+                        <Pressable
+                          style={{ backgroundColor: '#fff', borderRadius: 8, padding: 10, marginHorizontal: 4, borderWidth: 1, borderColor: '#e0eafc', elevation: 2 }}
+                          onPress={() => Alert.alert('Google Sign-Up', 'Not implemented yet')}
+                        >
+                          <FontAwesome name="google" size={24} color="#EA4335" />
+                        </Pressable>
+                        <Pressable
+                          style={{ backgroundColor: '#fff', borderRadius: 8, padding: 10, marginHorizontal: 4, borderWidth: 1, borderColor: '#e0eafc', elevation: 2 }}
+                          onPress={() => Alert.alert('Facebook Sign-Up', 'Not implemented yet')}
+                        >
+                          <FontAwesome name="facebook" size={24} color="#1877F3" />
+                        </Pressable>
+                        <Pressable
+                          style={{ backgroundColor: '#fff', borderRadius: 8, padding: 10, marginHorizontal: 4, borderWidth: 1, borderColor: '#e0eafc', elevation: 2 }}
+                          onPress={() => Alert.alert('GitHub Sign-Up', 'Not implemented yet')}
+                        >
+                          <FontAwesome name="github" size={24} color="#333" />
+                        </Pressable>
+                      </View>
+                    </View>
+                    {/* Instead of a button, use a link style for navigation */}
+                    <Text
+                        style={{ color: '#19376d', fontSize: 16, fontWeight: '600', textAlign: 'center', marginTop: 8, textDecorationLine: 'underline' }}
                         onPress={() => router.push("/(auth)/login")}
                     >
-                        <Text style={{ color: '#19376d', fontSize: 16, fontWeight: '600', textAlign: 'center' }}>
-                            Already have an account? Login
-                        </Text>
-                    </Pressable>
+                        Already have an account? Login
+                    </Text>
                 </View>
             </KeyboardAvoidingView>
         </LinearGradient>
