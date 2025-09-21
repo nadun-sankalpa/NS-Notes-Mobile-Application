@@ -13,9 +13,9 @@ const index = () => {
   useEffect(() => {
     if (!loading) {
       if (user) {
-        router.push("/home")
+        router.push("/(auth)/login")
       } else {
-        router.push("/login")
+        router.push("/(auth)/login")
       }
     }
   }, [user, loading])

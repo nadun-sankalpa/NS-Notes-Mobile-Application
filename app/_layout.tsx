@@ -4,13 +4,16 @@ import { Slot, Stack } from 'expo-router'
 import "./../global.css"
 import { AuthProvider } from '@/context/AuthContext'
 import { LoaderProvider } from '@/context/LoaderContext (1)'
+import { BeautifulAlertProvider } from "@/components/BeautifulAlert"
 
 const RootLayout = () => {
   return (
     <LoaderProvider>
-    <AuthProvider>
-      <Slot/>
-    </AuthProvider>
+      <AuthProvider>
+        <BeautifulAlertProvider>
+          <Slot/>
+        </BeautifulAlertProvider>
+      </AuthProvider>
     </LoaderProvider>
   )
 }
