@@ -11,6 +11,7 @@ import { storage } from '../../firebase';
 import Voice from '@react-native-voice/voice';
 import { BlurView } from 'expo-blur';
 import { useTheme } from '../../context/ThemeContext';
+import { useSettings } from '../../context/SettingsContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -19,6 +20,7 @@ const IMGBB_API_KEY = '0e1db39eeceeb3305730e6efa431f38b';
 const HomeScreen = () => {
   const { user } = useAuth();
   const { theme } = useTheme();
+  const { settings } = useSettings();
   const isDarkMode = theme === 'dark';
   const [notes, setNotes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,13 +56,30 @@ const HomeScreen = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [noteTitle, setNoteTitle] = useState('');
   const [noteBody, setNoteBody] = useState('');
-  const [fontSize, setFontSize] = useState(16);
+  const [fontSize, setFontSize] = useState(settings.defaultFontSize);
+  const [fontFamily, setFontFamily] = useState('System');
   const [fontColor, setFontColor] = useState('#19376d');
   const [saving, setSaving] = useState(false);
   const [isBold, setIsBold] = useState(false);
   const [isItalic, setIsItalic] = useState(false);
   const [isUnderline, setIsUnderline] = useState(false);
-  const [image, setImage] = useState(null);
+  const [image, setImage] = useState<string | null>(null);
+
+  // When opening the modal for a new note, set the default styles from settings
+  const handleAddNewNote = () => {
+    setEditMode(false);
+    setEditNote(null);
+    setNoteTitle('');
+    setNoteBody('');
+    setFontSize(settings.defaultFontSize);
+    setFontFamily(settings.defaultFont === 'SpaceMono' ? 'SpaceMono-Regular' : 'System');
+    setFontColor('#19376d');
+    setIsBold(false);
+    setIsItalic(false);
+    setIsUnderline(false);
+    setImage(null);
+    setShowAddModal(true);
+  };
 
   // --- Voice Typing State ---
   const [isListening, setIsListening] = useState(false);
@@ -189,6 +208,7 @@ const HomeScreen = () => {
       title: noteTitle,
       body: noteBody,
       fontSize,
+      fontFamily,
       fontColor,
       isBold,
       isItalic,
@@ -201,7 +221,8 @@ const HomeScreen = () => {
     setShowAddModal(false);
     setNoteTitle('');
     setNoteBody('');
-    setFontSize(16);
+    setFontSize(settings.defaultFontSize);
+    setFontFamily(settings.defaultFont === 'SpaceMono' ? 'SpaceMono-Regular' : 'System');
     setFontColor('#19376d');
     setIsBold(false);
     setIsItalic(false);
@@ -245,13 +266,19 @@ const HomeScreen = () => {
   };
 
   const handleDeleteNote = (id: string) => {
-    Alert.alert('Delete Note', 'Are you sure you want to delete this note?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => {
-        await deleteTask(id);
-        fetchNotes();
-      }}
-    ]);
+    const deleteAction = async () => {
+      await deleteTask(id);
+      fetchNotes();
+    };
+
+    if (settings.confirmDelete) {
+      Alert.alert('Delete Note', 'Are you sure you want to delete this note?', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: deleteAction },
+      ]);
+    } else {
+      deleteAction();
+    }
   };
 
   const handleEditNote = (note: any) => {
@@ -261,6 +288,7 @@ const HomeScreen = () => {
     setNoteTitle(note.title || '');
     setNoteBody(note.body || '');
     setFontSize(note.fontSize || 16);
+    setFontFamily(note.fontFamily || 'System');
     setFontColor(note.fontColor || '#19376d');
     setIsBold(note.isBold || false);
     setIsItalic(note.isItalic || false);
@@ -280,6 +308,7 @@ const HomeScreen = () => {
       title: noteTitle,
       body: noteBody,
       fontSize,
+      fontFamily,
       fontColor,
       isBold,
       isItalic,
@@ -292,7 +321,8 @@ const HomeScreen = () => {
     setEditMode(false);
     setNoteTitle('');
     setNoteBody('');
-    setFontSize(16);
+    setFontSize(settings.defaultFontSize);
+    setFontFamily(settings.defaultFont === 'SpaceMono' ? 'SpaceMono-Regular' : 'System');
     setFontColor('#19376d');
     setIsBold(false);
     setIsItalic(false);
@@ -441,7 +471,7 @@ const HomeScreen = () => {
           elevation: 6,
           zIndex: 10,
         }}
-        onPress={() => setShowAddModal(true)}
+        onPress={handleAddNewNote}
         activeOpacity={0.85}
       >
         <Text style={{ color: isDarkMode ? '#19376d' : '#fff', fontSize: 32, fontWeight: 'bold', marginBottom: 2 }}>+</Text>
@@ -496,7 +526,24 @@ const HomeScreen = () => {
                   </TouchableOpacity>
                 </View>
                 <TextInput
-                  style={{ fontSize, color: fontColor, fontWeight: isBold ? 'bold' : 'normal', fontStyle: isItalic ? 'italic' : 'normal', textDecorationLine: isUnderline ? 'underline' : 'none', backgroundColor: isDarkMode ? '#2e2e2e' : '#f8fafd', borderRadius: 8, padding: 12, minHeight: 80, marginBottom: 16, textAlignVertical: 'top', borderWidth: 1, borderColor: isDarkMode ? '#333' : '#e0eafc' }}
+                  style={[
+                    {
+                      fontSize,
+                      color: fontColor,
+                      fontWeight: isBold ? 'bold' : 'normal',
+                      fontStyle: isItalic ? 'italic' : 'normal',
+                      textDecorationLine: isUnderline ? 'underline' : 'none',
+                      backgroundColor: isDarkMode ? '#2e2e2e' : '#f8fafd',
+                      borderRadius: 8,
+                      padding: 12,
+                      minHeight: 80,
+                      marginBottom: 16,
+                      textAlignVertical: 'top',
+                      borderWidth: 1,
+                      borderColor: isDarkMode ? '#333' : '#e0eafc',
+                      fontFamily: fontFamily,
+                    },
+                  ]}
                   placeholder="Type your note..."
                   value={noteBody}
                   onChangeText={setNoteBody}
@@ -582,7 +629,7 @@ const HomeScreen = () => {
 const getStyles = (isDarkMode: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: isDarkMode ? '#121212' : '#f7fafd',
+    backgroundColor: isDarkMode ? '#0a0a0a' : '#f7fafd',
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -6,6 +6,7 @@ import { AuthProvider } from '../context/AuthContext';
 import { LoaderProvider } from '@/context/LoaderContext (1)'
 import { BeautifulAlertProvider } from "@/components/BeautifulAlert"
 import { ThemeProvider } from '../context/ThemeContext';
+import { SettingsProvider } from '../context/SettingsContext';
 
 const RootLayout = () => {
   // Remove auto-navigation to avoid navigation before mounting error
@@ -13,9 +14,11 @@ const RootLayout = () => {
     <LoaderProvider>
       <AuthProvider>
         <ThemeProvider>
-          <BeautifulAlertProvider>
-            <Slot/>
-          </BeautifulAlertProvider>
+          <SettingsProvider>
+            <BeautifulAlertProvider>
+              <Slot/>
+            </BeautifulAlertProvider>
+          </SettingsProvider>
         </ThemeProvider>
       </AuthProvider>
     </LoaderProvider>

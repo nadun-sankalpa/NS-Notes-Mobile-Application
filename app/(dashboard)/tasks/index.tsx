@@ -1,4 +1,4 @@
-import { View, Text, Pressable, ScrollView, Alert } from 'react-native'
+export { default } from './reminders';
 import React, { use } from 'react'
 import { getAllTasks, taskColRef } from '@/services/taskService'
 import { useEffect } from 'react'
