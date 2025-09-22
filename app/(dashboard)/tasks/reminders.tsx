@@ -8,6 +8,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Notifications from 'expo-notifications';
 import * as Application from 'expo-application';
 import { useAuth } from '../../../context/AuthContext';
+import { useBeautiful3D } from '../../../context/Beautiful3DContext';
 import { createReminder, getAllRemindersByUserId, deleteReminder as deleteReminderFromFirebase, Reminder as FirebaseReminder, updateReminder } from '../../../services/reminderService';
 import AlarmPopup from '../../../components/AlarmPopup';
 
@@ -35,6 +36,7 @@ interface Reminder {
 const RemindersScreen = () => {
   const { theme } = useTheme();
   const { user } = useAuth();
+  const { showErrorAlert, showSuccessAlert, showWarningAlert, showConfirmAlert, setLoading: setBeautiful3DLoading } = useBeautiful3D();
   const isDarkMode = theme === 'dark';
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -426,7 +428,7 @@ const RemindersScreen = () => {
       }
       
       // Show confirmation that the alarm is set
-      Alert.alert(
+      showSuccessAlert(
         '🔔 Reminder Set!', 
         `You'll get a sound alert for "${reminder.title}" on ${reminder.date.toLocaleDateString()} at ${reminder.date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}\n\n📱 Your phone will play a sound and vibrate when the time comes!\n\nNotification ID: ${notificationId}`
       );
@@ -434,28 +436,28 @@ const RemindersScreen = () => {
       return notificationId;
     } catch (error) {
       console.error('❌ Failed to schedule notification:', error);
-      Alert.alert('Error', 'Failed to schedule reminder alert. Please check notification permissions.');
+      showErrorAlert('Error', 'Failed to schedule reminder alert. Please check notification permissions.');
       return null;
     }
   };
 
   const handleAddReminder = async () => {
     if (!reminderTitle.trim()) {
-      Alert.alert('Error', 'Please enter a reminder title.');
+      showErrorAlert('Error', 'Please enter a reminder title.');
       return;
     }
 
     if (selectedDate <= new Date()) {
-      Alert.alert('Error', 'Please select a future date and time.');
+      showErrorAlert('Error', 'Please select a future date and time.');
       return;
     }
 
     if (!user?.uid) {
-      Alert.alert('Error', 'User not authenticated.');
+      showErrorAlert('Error', 'User not authenticated.');
       return;
     }
 
-    setLoading(true);
+    setBeautiful3DLoading(true, { text: 'Creating reminder...', size: 'medium' });
     try {
       // Create temporary reminder for notification scheduling
       const tempReminder: Reminder = {
@@ -495,27 +497,22 @@ const RemindersScreen = () => {
       setReminderTitle('');
       setSelectedDate(new Date());
       
-      Alert.alert(
+      showSuccessAlert(
         '✅ Reminder Saved!', 
         `Your reminder has been saved to the cloud and you'll get a sound alert on ${selectedDate.toLocaleDateString()} at ${selectedDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`
       );
     } catch (error) {
       console.error('Failed to create reminder:', error);
-      Alert.alert('Error', 'Failed to set reminder. Please try again.');
+      showErrorAlert('Error', 'Failed to set reminder. Please try again.');
     }
-    setLoading(false);
+    setBeautiful3DLoading(false);
   };
 
   const handleDeleteReminder = async (reminder: Reminder) => {
-    Alert.alert(
+    showConfirmAlert(
       'Delete Reminder',
       'Are you sure you want to delete this reminder? It will be removed from the cloud and the scheduled alarm will be cancelled.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
+      async () => {
             try {
               // Cancel the scheduled notification if it exists
               if (reminder.notificationId) {
@@ -531,14 +528,12 @@ const RemindersScreen = () => {
               const updatedReminders = reminders.filter(r => r.id !== reminder.id);
               await saveReminders(updatedReminders);
 
-              Alert.alert('✅ Deleted', 'Reminder has been deleted from the cloud and alarm cancelled.');
+              showSuccessAlert('✅ Deleted', 'Reminder has been deleted from the cloud and alarm cancelled.');
             } catch (error) {
               console.error('Failed to delete reminder:', error);
-              Alert.alert('Error', 'Failed to delete reminder. Please try again.');
+              showErrorAlert('Error', 'Failed to delete reminder. Please try again.');
             }
-          },
-        },
-      ]
+      }
     );
   };
 

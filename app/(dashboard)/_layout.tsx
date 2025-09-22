@@ -1,7 +1,7 @@
 import { View, Text } from 'react-native'
 import React from 'react'
 import { Slot, Tabs } from 'expo-router'
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 
 const DashBoardLayout = () => {
@@ -10,63 +10,77 @@ const DashBoardLayout = () => {
 
   return <Tabs screenOptions={{
     headerShown: false,
-    tabBarActiveTintColor: isDarkMode ? "#fff" : "#040f72",
-    tabBarInactiveTintColor: isDarkMode ? "#888" : "#2c3e50",
+    tabBarActiveTintColor: isDarkMode ? "#4FC3F7" : "#1976D2",
+    tabBarInactiveTintColor: isDarkMode ? "#666" : "#757575",
     tabBarStyle: {
-      backgroundColor: isDarkMode ? '#1e1e1e' : '#ffffff',
+      backgroundColor: isDarkMode ? '#1a1a1a' : '#ffffff',
       borderTopWidth: 0,
-      elevation: 8,
-      shadowColor: '#1e6fe9',
-      shadowOpacity: isDarkMode ? 0.3 : 0.1,
-      shadowRadius: 10,
-      shadowOffset: { width: 0, height: -2 },
-      height: 65,
-      paddingBottom: 8,
-      paddingTop: 8,
-      borderTopLeftRadius: 20,
-      borderTopRightRadius: 20,
+      elevation: 20,
+      shadowColor: isDarkMode ? '#4FC3F7' : '#1976D2',
+      shadowOpacity: isDarkMode ? 0.4 : 0.15,
+      shadowRadius: 15,
+      shadowOffset: { width: 0, height: -3 },
+      height: 75,
+      paddingBottom: 12,
+      paddingTop: 12,
+      borderTopLeftRadius: 25,
+      borderTopRightRadius: 25,
+      position: 'absolute',
+      left: 10,
+      right: 10,
+      bottom: 10,
+      marginHorizontal: 5,
     },
     tabBarLabelStyle: {
-      fontSize: 12,
-      fontWeight: '600',
-      marginTop: 4,
+      fontSize: 11,
+      fontWeight: '700',
+      marginTop: 2,
+      letterSpacing: 0.5,
     },
     tabBarIconStyle: {
-      marginBottom: 2,
+      marginBottom: 0,
     },
   }}>
     <Tabs.Screen name="home" 
     options={{ 
-        title: "Home",
+        title: "Notes",
         tabBarIcon: ({ color, size, focused }) => (
           <View style={{
-            backgroundColor: focused ? (isDarkMode ? '#ffffff15' : '#e91e6315') : 'transparent',
-            borderRadius: 12,
-            padding: 8,
-            minWidth: 40,
+            backgroundColor: focused ? (isDarkMode ? '#4FC3F720' : '#1976D220') : 'transparent',
+            borderRadius: 16,
+            padding: 10,
+            minWidth: 45,
+            minHeight: 45,
             alignItems: 'center',
+            justifyContent: 'center',
+            transform: [{ scale: focused ? 1.1 : 1 }],
           }}>
-            <MaterialIcons 
-              name="home" 
-              size={focused ? size + 2 : size} 
+            <Ionicons 
+              name={focused ? "document-text" : "document-text-outline"} 
+              size={focused ? 24 : 22} 
               color={color} 
             />
           </View>
         )
     }} 
     />
-    <Tabs.Screen name="tasks/index" options={{ title: "Task", 
+    <Tabs.Screen name="tasks/index" options={{ 
+      title: "Reminders",
+      tabBarLabel: "Reminders",
       tabBarIcon: ({ color, size, focused }) => (
         <View style={{
-          backgroundColor: focused ? (isDarkMode ? '#ffffff15' : '#e91e6315') : 'transparent',
-          borderRadius: 12,
-          padding: 8,
-          minWidth: 40,
+          backgroundColor: focused ? (isDarkMode ? '#4FC3F720' : '#1976D220') : 'transparent',
+          borderRadius: 16,
+          padding: 10,
+          minWidth: 45,
+          minHeight: 45,
           alignItems: 'center',
+          justifyContent: 'center',
+          transform: [{ scale: focused ? 1.1 : 1 }],
         }}>
-          <MaterialIcons 
-            name="check-circle" 
-            size={focused ? size + 2 : size} 
+          <Ionicons 
+            name={focused ? "alarm" : "alarm-outline"} 
+            size={focused ? 24 : 22} 
             color={color} 
           />
         </View>
@@ -77,32 +91,38 @@ const DashBoardLayout = () => {
          title: "Profile",
          tabBarIcon: ({ color, size, focused }) => (
            <View style={{
-             backgroundColor: focused ? (isDarkMode ? '#ffffff15' : '#e91e6315') : 'transparent',
-             borderRadius: 12,
-             padding: 8,
-             minWidth: 40,
+             backgroundColor: focused ? (isDarkMode ? '#4FC3F720' : '#1976D220') : 'transparent',
+             borderRadius: 16,
+             padding: 10,
+             minWidth: 45,
+             minHeight: 45,
              alignItems: 'center',
+             justifyContent: 'center',
+             transform: [{ scale: focused ? 1.1 : 1 }],
            }}>
-             <MaterialIcons 
-               name="person" 
-               size={focused ? size + 2 : size} 
+             <Ionicons 
+               name={focused ? "person" : "person-outline"} 
+               size={focused ? 24 : 22} 
                color={color} 
              />
            </View>
          )
          }} />
-    <Tabs.Screen name="setting" options={{ title: "Setting",
+    <Tabs.Screen name="setting" options={{ title: "Settings",
       tabBarIcon: ({ color, size, focused }) => (
         <View style={{
-          backgroundColor: focused ? (isDarkMode ? '#ffffff15' : '#e91e6315') : 'transparent',
-          borderRadius: 12,
-          padding: 8,
-          minWidth: 40,
+          backgroundColor: focused ? (isDarkMode ? '#4FC3F720' : '#1976D220') : 'transparent',
+          borderRadius: 16,
+          padding: 10,
+          minWidth: 45,
+          minHeight: 45,
           alignItems: 'center',
+          justifyContent: 'center',
+          transform: [{ scale: focused ? 1.1 : 1 }],
         }}>
-          <MaterialIcons 
-            name="settings" 
-            size={focused ? size + 2 : size} 
+          <Ionicons 
+            name={focused ? "settings" : "settings-outline"} 
+            size={focused ? 24 : 22} 
             color={color} 
           />
         </View>

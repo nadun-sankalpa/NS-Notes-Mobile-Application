@@ -12,16 +12,17 @@ import {
     Image
 } from 'react-native'
 import { useRouter } from 'expo-router';
-import { Alert } from 'react-native';
 import { login } from '@/services/authService'
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { FontAwesome } from '@expo/vector-icons';
+import { useBeautiful3D } from '../../context/Beautiful3DContext';
 
 const { width, height } = Dimensions.get('window');
 
 const Login = () => {
     const router = useRouter();
+    const { showAlert, showToast } = useBeautiful3D();
     const [email, setEmail] = React.useState("");
     const [password, setPassword] = React.useState("");
     const [loading, setLoading] = React.useState(false);
@@ -56,16 +57,30 @@ const Login = () => {
     const handleLogin = async () => {
         if (loading) return;
         if (email === "" || password === "") {
-            Alert.alert("Please fill out all fields");
+            showAlert({
+                title: "Missing Information",
+                message: "Please fill out all fields",
+                type: "warning",
+                confirmText: "OK"
+            });
             return;
         }
         setLoading(true);
         await login(email, password)
             .then((res) => {
+                showToast({
+                    message: "Login successful! Welcome back!",
+                    type: "success"
+                });
                 router.replace('/home');
             })
             .catch((err) => {
-                Alert.alert("Login failed", err.message);
+                showAlert({
+                    title: "Login Failed",
+                    message: err.message,
+                    type: "error",
+                    confirmText: "Try Again"
+                });
                 console.error(err);
             })
             .finally(() => {
@@ -180,19 +195,34 @@ const Login = () => {
                       <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 16 }}>
                         <Pressable
                           style={{ backgroundColor: '#fff', borderRadius: 8, padding: 10, marginHorizontal: 4, borderWidth: 1, borderColor: '#e0eafc', elevation: 2 }}
-                          onPress={() => Alert.alert('Google Sign-In', 'Not implemented yet')}
+                          onPress={() => showAlert({
+                            title: "Google Sign-In",
+                            message: "This feature is coming soon! Stay tuned for updates.",
+                            type: "info",
+                            confirmText: "Got it"
+                          })}
                         >
                           <FontAwesome name="google" size={24} color="#EA4335" />
                         </Pressable>
                         <Pressable
                           style={{ backgroundColor: '#fff', borderRadius: 8, padding: 10, marginHorizontal: 4, borderWidth: 1, borderColor: '#e0eafc', elevation: 2 }}
-                          onPress={() => Alert.alert('Facebook Sign-In', 'Not implemented yet')}
+                          onPress={() => showAlert({
+                            title: "Facebook Sign-In",
+                            message: "This feature is coming soon! Stay tuned for updates.",
+                            type: "info",
+                            confirmText: "Got it"
+                          })}
                         >
                           <FontAwesome name="facebook" size={24} color="#1877F3" />
                         </Pressable>
                         <Pressable
                           style={{ backgroundColor: '#fff', borderRadius: 8, padding: 10, marginHorizontal: 4, borderWidth: 1, borderColor: '#e0eafc', elevation: 2 }}
-                          onPress={() => Alert.alert('GitHub Sign-In', 'Not implemented yet')}
+                          onPress={() => showAlert({
+                            title: "GitHub Sign-In",
+                            message: "This feature is coming soon! Stay tuned for updates.",
+                            type: "info",
+                            confirmText: "Got it"
+                          })}
                         >
                           <FontAwesome name="github" size={24} color="#333" />
                         </Pressable>

@@ -14,15 +14,16 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { register } from '@/services/authService';
-import { BeautifulAlert } from "@/components/BeautifulAlert";
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { FontAwesome } from '@expo/vector-icons';
+import { useBeautiful3D } from '../../context/Beautiful3DContext';
 
 const { width, height } = Dimensions.get('window');
 
 const Register = () => {
     const router = useRouter()
+    const { showAlert, showToast } = useBeautiful3D();
     const [email, setEmail] = React.useState("")
     const [password, setPassword] = React.useState("")
     const [confirmPassword, setConfirmPassword] = React.useState("")
@@ -57,41 +58,40 @@ const Register = () => {
 
     const handleRegister = async() => {
         if(email === "" || password === "" || confirmPassword === "") {
-            BeautifulAlert.show(
-              'Please Fill Out All Fields',
-              'Please fill out all fields to register.',
-              'error',
-              () => {}
-            )
+            showAlert({
+                title: "Missing Information",
+                message: "Please fill out all fields to register.",
+                type: "warning",
+                confirmText: "OK"
+            });
             return
         }
         if(password !== confirmPassword) {
-            BeautifulAlert.show(
-              'Passwords Do Not Match',
-              'Passwords do not match. Please try again.',
-              'error',
-              () => {}
-            )
+            showAlert({
+                title: "Passwords Do Not Match",
+                message: "Passwords do not match. Please try again.",
+                type: "error",
+                confirmText: "Try Again"
+            });
             return
         }
         setLoading(true)
         try {
             await register(email, password)
-            setTimeout(() => {
-              BeautifulAlert.show(
-                'Registration Successful!',
-                'Your account has been created.',
-                'success',
-                () => router.replace('login')
-              )
-            }, 100);
+            showAlert({
+                title: "Registration Successful!",
+                message: "Your account has been created successfully. Welcome to NS Notes!",
+                type: "success",
+                confirmText: "Continue",
+                onConfirm: () => router.replace('login')
+            });
         } catch (err: any) {
-            BeautifulAlert.show(
-              'Registration Failed',
-              err.message || JSON.stringify(err),
-              'error',
-              () => {}
-            )
+            showAlert({
+                title: "Registration Failed",
+                message: err.message || "An error occurred during registration. Please try again.",
+                type: "error",
+                confirmText: "Try Again"
+            });
             console.error("Registration error:", err)
         } finally {
             setLoading(false)
@@ -214,19 +214,34 @@ const Register = () => {
                       <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 16 }}>
                         <Pressable
                           style={{ backgroundColor: '#fff', borderRadius: 8, padding: 10, marginHorizontal: 4, borderWidth: 1, borderColor: '#e0eafc', elevation: 2 }}
-                          onPress={() => Alert.alert('Google Sign-Up', 'Not implemented yet')}
+                          onPress={() => showAlert({
+                            title: "Google Sign-Up",
+                            message: "This feature is coming soon! Stay tuned for updates.",
+                            type: "info",
+                            confirmText: "Got it"
+                          })}
                         >
                           <FontAwesome name="google" size={24} color="#EA4335" />
                         </Pressable>
                         <Pressable
                           style={{ backgroundColor: '#fff', borderRadius: 8, padding: 10, marginHorizontal: 4, borderWidth: 1, borderColor: '#e0eafc', elevation: 2 }}
-                          onPress={() => Alert.alert('Facebook Sign-Up', 'Not implemented yet')}
+                          onPress={() => showAlert({
+                            title: "Facebook Sign-Up",
+                            message: "This feature is coming soon! Stay tuned for updates.",
+                            type: "info",
+                            confirmText: "Got it"
+                          })}
                         >
                           <FontAwesome name="facebook" size={24} color="#1877F3" />
                         </Pressable>
                         <Pressable
                           style={{ backgroundColor: '#fff', borderRadius: 8, padding: 10, marginHorizontal: 4, borderWidth: 1, borderColor: '#e0eafc', elevation: 2 }}
-                          onPress={() => Alert.alert('GitHub Sign-Up', 'Not implemented yet')}
+                          onPress={() => showAlert({
+                            title: "GitHub Sign-Up",
+                            message: "This feature is coming soon! Stay tuned for updates.",
+                            type: "info",
+                            confirmText: "Got it"
+                          })}
                         >
                           <FontAwesome name="github" size={24} color="#333" />
                         </Pressable>

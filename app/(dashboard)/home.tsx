@@ -12,6 +12,8 @@ import Voice from '@react-native-voice/voice';
 import { BlurView } from 'expo-blur';
 import { useTheme } from '../../context/ThemeContext';
 import { useSettings } from '../../context/SettingsContext';
+import { useBeautiful3D } from '../../context/Beautiful3DContext';
+import { extractTextFromImage } from '../../services/ocrService';
 
 const { width, height } = Dimensions.get('window');
 
@@ -21,6 +23,7 @@ const HomeScreen = () => {
   const { user } = useAuth();
   const { theme } = useTheme();
   const { settings } = useSettings();
+  const { showAlert, showToast } = useBeautiful3D();
   const isDarkMode = theme === 'dark';
   const [notes, setNotes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,6 +67,71 @@ const HomeScreen = () => {
   const [isItalic, setIsItalic] = useState(false);
   const [isUnderline, setIsUnderline] = useState(false);
   const [image, setImage] = useState<string | null>(null);
+
+
+  // Handle OCR text extraction from selected image
+  const handleExtractTextFromImage = async (imageUri: string) => {
+    try {
+      showToast({
+        message: "Extracting text from image...",
+        type: "info"
+      });
+
+      const extractedText = await extractTextFromImage(imageUri);
+      
+      if (extractedText && extractedText.trim()) {
+        // Add the extracted text to the note body
+        setNoteBody(prev => {
+          const separator = prev.trim() ? '\n\n' : '';
+          return prev + separator + extractedText;
+        });
+        
+        showToast({
+          message: "Text extracted and added to note!",
+          type: "success"
+        });
+      } else {
+        showAlert({
+          title: "No Text Found",
+          message: "No readable text was found in this image. Please try with an image that contains clear text.",
+          type: "warning",
+          confirmText: "OK"
+        });
+      }
+    } catch (error) {
+      console.error('OCR extraction error:', error);
+      showAlert({
+        title: "Extraction Failed",
+        message: "Failed to extract text from the image. Please try again.",
+        type: "error",
+        confirmText: "OK"
+      });
+    }
+  };
+
+  // Handle dedicated OCR button - allows user to pick image specifically for text extraction
+  const handleOCRExtraction = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status === 'granted') {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+      });
+      if (!result.cancelled) {
+        // Directly extract text without asking - this is a dedicated OCR button
+        await handleExtractTextFromImage(result.uri);
+      }
+    } else {
+      showAlert({
+        title: "Permission Required",
+        message: "Please allow access to your photo library to extract text from images.",
+        type: "warning",
+        confirmText: "OK"
+      });
+    }
+  };
 
   // When opening the modal for a new note, set the default styles from settings
   const handleAddNewNote = () => {
@@ -156,14 +224,24 @@ const HomeScreen = () => {
       try {
         const hasPermission = await requestMicPermission();
         if (!hasPermission) {
-          Alert.alert('Permission Denied', 'Microphone permission is required for voice typing.');
+          showAlert({
+            title: 'Permission Denied',
+            message: 'Microphone permission is required for voice typing.',
+            type: 'warning',
+            confirmText: 'OK'
+          });
           return;
         }
         
         // Check if Voice is available
         const isAvailable = await Voice.isAvailable();
         if (!isAvailable) {
-          Alert.alert('Voice Recognition Unavailable', 'Speech recognition is not available on this device. Please make sure Google Speech Services is installed and enabled.');
+          showAlert({
+            title: 'Voice Recognition Unavailable',
+            message: 'Speech recognition is not available on this device. Please make sure Google Speech Services is installed and enabled.',
+            type: 'error',
+            confirmText: 'OK'
+          });
           return;
         }
         
@@ -172,7 +250,12 @@ const HomeScreen = () => {
       } catch (e) {
         console.log('Voice error details:', e);
         setIsListening(false);
-        Alert.alert('Voice Error', 'Could not start voice recognition. Please check if Google Speech Services is enabled on your device.');
+        showAlert({
+          title: 'Voice Error',
+          message: 'Could not start voice recognition. Please check if Google Speech Services is enabled on your device.',
+          type: 'error',
+          confirmText: 'OK'
+        });
       }
     }
   };
@@ -242,6 +325,23 @@ const HomeScreen = () => {
       });
       if (!result.cancelled) {
         setImage(result.uri);
+        
+        // Ask user if they want to extract text from the selected image
+        showAlert({
+          title: "Extract Text from Image?",
+          message: "Would you like to extract any text from this image and add it to your note?",
+          type: "info",
+          confirmText: "Extract Text",
+          cancelText: "Just Add Image",
+          onConfirm: () => handleExtractTextFromImage(result.uri),
+          onCancel: () => {
+            // Just keep the image without OCR
+            showToast({
+              message: "Image added to note",
+              type: "success"
+            });
+          }
+        });
       }
     }
   };
@@ -253,7 +353,25 @@ const HomeScreen = () => {
       quality: 0.8,
     });
     if (!result.canceled && result.assets && result.assets.length > 0) {
-      setImage(result.assets[0].uri);
+      const imageUri = result.assets[0].uri;
+      setImage(imageUri);
+      
+      // Ask user if they want to extract text from the captured photo
+      showAlert({
+        title: "Extract Text from Photo?",
+        message: "Would you like to extract any text from this photo and add it to your note?",
+        type: "info",
+        confirmText: "Extract Text",
+        cancelText: "Just Add Photo",
+        onConfirm: () => handleExtractTextFromImage(imageUri),
+        onCancel: () => {
+          // Just keep the photo without OCR
+          showToast({
+            message: "Photo added to note",
+            type: "success"
+          });
+        }
+      });
     }
   };
 
@@ -272,10 +390,14 @@ const HomeScreen = () => {
     };
 
     if (settings.confirmDelete) {
-      Alert.alert('Delete Note', 'Are you sure you want to delete this note?', [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: deleteAction },
-      ]);
+      showAlert({
+        title: 'Delete Note',
+        message: 'Are you sure you want to delete this note? This action cannot be undone.',
+        type: 'warning',
+        confirmText: 'Delete',
+        cancelText: 'Cancel',
+        onConfirm: deleteAction
+      });
     } else {
       deleteAction();
     }
@@ -461,7 +583,7 @@ const HomeScreen = () => {
         style={{
           position: 'absolute',
           right: 24,
-          bottom: 36,
+          bottom: 100,
           backgroundColor: isDarkMode ? '#fff' : '#19376d',
           borderRadius: 32,
           width: 56,
@@ -470,6 +592,10 @@ const HomeScreen = () => {
           alignItems: 'center',
           elevation: 6,
           zIndex: 10,
+          shadowColor: isDarkMode ? '#fff' : '#19376d',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 8,
         }}
         onPress={handleAddNewNote}
         activeOpacity={0.85}
@@ -561,6 +687,9 @@ const HomeScreen = () => {
                   <TouchableOpacity onPress={isListening ? handleStopVoice : handleStartVoice} style={{ backgroundColor: isListening ? (isDarkMode ? '#EA4335' : '#EA4335') : (isDarkMode ? '#333' : '#e0eafc'), borderRadius: 8, padding: 10, marginRight: 4 }}>
                     <FontAwesome name="microphone" size={22} color={isListening ? (isDarkMode ? '#fff' : '#fff') : (isDarkMode ? '#fff' : '#19376d')} />
                   </TouchableOpacity>
+                  <TouchableOpacity onPress={handleOCRExtraction} style={{ backgroundColor: isDarkMode ? '#4CAF50' : '#2E7D32', borderRadius: 8, padding: 10, marginRight: 4 }}>
+                    <FontAwesome name="text-width" size={22} color="#ffffff" />
+                  </TouchableOpacity>
                   <TouchableOpacity onPress={handleShareNote} style={{ backgroundColor: isDarkMode ? '#1877F3' : '#1877F3', borderRadius: 8, padding: 10 }}>
                     <FontAwesome name="share-alt" size={22} color={isDarkMode ? '#fff' : '#fff'} />
                   </TouchableOpacity>
@@ -622,6 +751,7 @@ const HomeScreen = () => {
           </View>
         </BlurView>
       </Modal>
+
     </View>
   );
 };
