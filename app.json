@@ -7,7 +7,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "amdday01",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.nadun25.nsnotesapp"
@@ -34,6 +34,24 @@
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "manifestAttributes": {
+              "xmlns:tools": "http://schemas.android.com/tools"
+            },
+            "gradleProperties": {
+              "android.useAndroidX": true,
+              "android.enableJetifier": true
+            },
+            "manifestApplicationAttributes": {
+              "android:appComponentFactory": "androidx.core.app.CoreComponentFactory",
+              "tools:replace": "android:appComponentFactory"
+            }
+          }
         }
       ]
     ],

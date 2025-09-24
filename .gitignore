@@ -79,3 +79,7 @@ yarn-error.*
 *.tsbuildinfo
 
 # @end expo-cli
+
+# Native project folders (use Prebuild with EAS)
+android/
+ios/
