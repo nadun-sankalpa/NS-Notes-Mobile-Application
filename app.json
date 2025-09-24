@@ -10,10 +10,10 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.nadun27.nsnotesapp"
+      "bundleIdentifier": "com.nadun25.nsnotesapp"
     },
     "android": {
-      "package": "com.nadun27.nsnotesapp",
+      "package": "com.nadun25.nsnotesapp",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -43,7 +43,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "784817b8-bc58-4593-8988-42b270953ace"
+        "projectId": "70b61bd9-e5ec-42b0-9874-ea02e9a90ee7"
       }
     }
   }
