@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Dimensions,
 } from "react-native"
 import React, { useState } from "react"
 import { useRouter } from "expo-router"
@@ -27,27 +26,39 @@ const Register = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false)
 
   const handleRegister = async () => {
-    // if(email)
-    // password
     if (isLoading) return
+    const emailRegex = /[^@\s]+@[^@\s]+\.[^@\s]+/
+    if (!emailRegex.test(email)) {
+      Alert.alert("Invalid email", "Please enter a valid email address")
+      return
+    }
+    if (!password || password.length < 6) {
+      Alert.alert("Weak password", "Password must be at least 6 characters long")
+      return
+    }
     if (password !== cPassword) {
-      Alert.alert("Title", "description")
+      Alert.alert("Passwords don't match", "Please make sure both passwords are the same")
       return
     }
     setIsLoading(true)
-    await register(email, password)
-      .then((res) => {
-        // const res = await register(email, password)
-        // success
-        router.back()
-      })
-      .catch((err) => {
-        Alert.alert("Registration failed", "Somthing went wrong")
-        console.error(err)
-      })
-      .finally(() => {
-        setIsLoading(false)
-      })
+    try {
+      await register(email.trim(), password)
+      // Success: go back to login
+      Alert.alert("Account created", "You can now log in with your credentials")
+      router.back()
+    } catch (err: any) {
+      // Firebase error mapping
+      const code = err?.code || "auth/unknown"
+      let message = "Something went wrong. Please try again."
+      if (code === "auth/email-already-in-use") message = "This email is already in use. Try logging in."
+      else if (code === "auth/invalid-email") message = "The email address is invalid."
+      else if (code === "auth/operation-not-allowed") message = "Email/password accounts are not enabled in Firebase."
+      else if (code === "auth/weak-password") message = "Password is too weak. Use at least 6 characters."
+      Alert.alert("Registration failed", message)
+      console.error("Register error:", err)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
