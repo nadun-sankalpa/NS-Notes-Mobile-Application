@@ -43,7 +43,7 @@ Smart, fast, and delightful note-taking powered by NS AI. Capture ideas with tex
 
 ## 🎥 Demo & Download
 
-- ▶️ YouTube Demo: [Add your video URL](https://your-youtube-demo-url)
+- ▶️ YouTube Demo: [Add your video URL]([https://your-youtube-demo-url](https://youtu.be/PeZ-Z9Y1RDw?si=shl2u_A8XYSnLl-1))
 - 📦 Android APK: [Add your APK download URL](https://your-apk-download-url)
 
 Tip: Replace the placeholder URLs above with your actual YouTube and APK links.
