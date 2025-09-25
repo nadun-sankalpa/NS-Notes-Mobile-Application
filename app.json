@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "amd-day-01",
+    "name": "NS Notes",
     "slug": "amd-day-01",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -8,6 +8,7 @@
     "scheme": "amdday01",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "owner": "nadun20",
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
@@ -25,7 +26,8 @@
         "RECORD_AUDIO",
         "POST_NOTIFICATIONS",
         "android.permission.RECORD_AUDIO"
-      ]
+      ],
+      "package": "com.nadun20.amdday01"
     },
     "web": {
       "bundler": "metro",
@@ -51,7 +53,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "70b61bd9-e5ec-42b0-9874-ea02e9a90ee7"
+        "projectId": "4f7b0312-cf26-4e0a-82eb-c8767469e0bf"
       }
     }
   }

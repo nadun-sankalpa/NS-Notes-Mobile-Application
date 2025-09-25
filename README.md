@@ -25,22 +25,154 @@ In the output, you'll find options to open the app in a
 
 You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
-## Get a fresh project
+# NS Notes App ✨📝
 
-When you're ready, run:
+Smart, fast, and delightful note-taking powered by NS AI. Capture ideas with text, voice, and camera. Organize them beautifully. Get things done with your Robo Pet assistant.
+
+— Built with Expo + React Native (SDK 53)
+
+## 🚀 Highlights
+
+- 🧠 NS AI Assistant: Chat with AI to summarize, draft, and improve notes
+- 🗣️ Voice Typing: Dictate notes hands-free with speech-to-text
+- 📸 Image → Text (OCR): Convert images into editable text
+- 🤖 Robo Pet: A playful productivity companion that nudges and helps you stay on track
+- 🪄 Beautiful UI: Smooth animations and 3D-styled loaders/toasts
+- 🔐 Secure Auth: Email login & protected routes
+- ☁️ Cloud Ready: Firebase config included
+
+## 🎥 Demo & Download
+
+- ▶️ YouTube Demo: [Add your video URL](https://your-youtube-demo-url)
+- 📦 Android APK: [Add your APK download URL](https://your-apk-download-url)
+
+Tip: Replace the placeholder URLs above with your actual YouTube and APK links.
+
+## 📂 Project Structure
 
 ```bash
-npm run reset-project
+app/
+  (auth)/          Auth screens (login, register)
+  (dashboard)/     Main app routes (home, tasks, etc.)
+components/        UI components (3D alerts, loaders, toasts)
+context/           Global contexts (Auth, Settings, Loader, 3D effects)
+services/          API, AI, OCR, and Auth services
+types/             Shared types and declarations
+assets/            Fonts and images
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## 🧩 Core Features
 
-## Learn more
+- Image to Text (OCR)
+  - Uses `services/ocrService.ts` to extract text from photos and images
+  - Ideal for digitizing handwritten notes and documents
 
-To learn more about developing your project with Expo, look at the following resources:
+- Voice Typing
+  - Dictate notes using the device microphone
+  - Type definitions in `types/web-speech.d.ts`
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+- NS AI Assistant
+  - `services/aiService.ts` powers AI features like summarization and content enhancements
+  - Use it to brainstorm, generate task lists, or polish your text
+
+- Robo Pet
+  - A friendly in-app assistant that gives subtle nudges, reminders, and motivation
+  - Integrates with tasks and notes to help you stay productive
+
+## ⚙️ Setup & Installation
+
+1) Install dependencies
+
+```bash
+npm install
+```
+
+2) Create environment file
+
+- Copy `.env.example` to `.env` and fill in your secrets (e.g., Firebase, AI keys)
+
+3) Start the app
+
+```bash
+npx expo start
+```
+
+Open in:
+
+- Development build
+- Android Emulator
+- iOS Simulator
+- Expo Go (sandbox)
+
+## 📱 Permissions
+
+- Microphone: Voice typing
+- Camera / Media: Image-to-text OCR
+
+Make sure to grant permissions when prompted by the OS.
+
+## 🛠️ Tech Stack
+
+- Expo Router, React Native, TypeScript
+- NativeWind/Tailwind for styling (`global.css`, `tailwind.config.js`)
+- Firebase integration (`firebase.ts`)
+- Beautiful 3D components in `components/`
+
+## 🧪 Scripts
+
+```bash
+npm run lint        # Lint the codebase
+npm run start       # Expo start
+npm run android     # Run on Android
+npm run ios         # Run on iOS (macOS)
+```
+
+## 📦 Building APK / EAS
+
+We use EAS for builds. Ensure you’re logged in to Expo and have EAS set up.
+
+```bash
+npx expo login
+npx eas build -p android --profile preview
+```
+
+Notes:
+
+- Ensure package versions are compatible with Expo SDK 53
+- If you see Gradle or dependency conflicts, clean node_modules and reinstall
+
+## 🧰 Troubleshooting
+
+- Android build fails on Windows
+  - Close all editors that may lock files
+  - Delete `node_modules`, clear caches, reinstall
+  - Ensure dependencies match Expo SDK 53
+
+- iOS bundle identifier
+  - Verify `app.json` has a valid `ios.bundleIdentifier` (e.g., `com.nadun27.nsnotesapp`)
+
+## 🔒 Security
+
+- Never commit secrets. Use `.env` and keep `.env` out of version control
+- Rotate keys periodically
+
+## 🙌 Contributing
+
+1. Fork the repo
+2. Create feature branch: `git checkout -b feat/awesome`
+3. Commit: `git commit -m "feat: add awesome"`
+4. Push: `git push origin feat/awesome`
+5. Open a PR
+
+## 📸 Screenshots (Optional)
+
+Add screenshots or screen-recordings here to showcase the UI and features.
+
+## 📝 License
+
+This project is licensed under the MIT License.
+
+— Built with ❤️ using Expo and TypeScript
 
 ## Join the community
 
