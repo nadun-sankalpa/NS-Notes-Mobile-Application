@@ -1,263 +1,126 @@
-import Animated, { FadeIn, SlideInUp, withRepeat, withTiming, useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
-import React from 'react';
 import {
-    View,
-    Text,
-    Pressable,
-    TextInput,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    Dimensions,
-    ActivityIndicator,
-    Image
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { register } from '@/services/authService';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
-import { FontAwesome } from '@expo/vector-icons';
-import { useBeautiful3D } from '../../context/Beautiful3DContext';
-
-const { width, height } = Dimensions.get('window');
+  View,
+  Text,
+  Pressable,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Dimensions,
+} from "react-native"
+import React, { useState } from "react"
+import { useRouter } from "expo-router"
+import { register } from "@/services/authService"
+import { LinearGradient } from 'expo-linear-gradient'
+import { Ionicons } from '@expo/vector-icons'
+import { useTheme } from '../../context/ThemeContext'
 
 const Register = () => {
-    const router = useRouter()
-    const { showAlert, showToast } = useBeautiful3D();
-    const [email, setEmail] = React.useState("")
-    const [password, setPassword] = React.useState("")
-    const [confirmPassword, setConfirmPassword] = React.useState("")
-    const [loading, setLoading] = React.useState(false)
+  const router = useRouter()
+  const { theme, toggleTheme } = useTheme()
+  const isDarkMode = theme === 'dark'
+  const [email, setEmail] = useState<string>("")
+  const [password, setPassword] = useState<string>("")
+  const [cPassword, setCPassword] = useState<string>("")
+  const [isLoading, setIsLoading] = useState<boolean>(false)
 
-    // --- Live Animations ---
-    const bubble1Scale = useSharedValue(1);
-    const bubble2Scale = useSharedValue(1);
-    React.useEffect(() => {
-      bubble1Scale.value = withRepeat(withTiming(1.15, { duration: 2200 }), -1, true);
-      bubble2Scale.value = withRepeat(withTiming(1.1, { duration: 1800 }), -1, true);
-    }, []);
-    const bubble1Style = useAnimatedStyle(() => ({ transform: [{ scale: bubble1Scale.value }] }));
-    const bubble2Style = useAnimatedStyle(() => ({ transform: [{ scale: bubble2Scale.value }] }));
-    const formEntering = SlideInUp.springify().damping(12);
-    const [focusedInput, setFocusedInput] = React.useState<string | null>(null);
-    const getInputStyle = (name: string) => [
-      {
-        backgroundColor: 'white',
-        borderRadius: 12,
-        padding: 14,
-        marginBottom: 18,
-        borderColor: focusedInput === name ? '#19376d' : '#284b8a',
-        borderWidth: 1,
-        fontSize: 16,
-      },
-    ];
-    const buttonScale = useSharedValue(1);
-    const buttonAnimatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: buttonScale.value }] }));
-    const handleButtonPressIn = () => { buttonScale.value = withTiming(0.96, { duration: 100 }); };
-    const handleButtonPressOut = () => { buttonScale.value = withTiming(1, { duration: 100 }); };
-
-    const handleRegister = async() => {
-        if(email === "" || password === "" || confirmPassword === "") {
-            showAlert({
-                title: "Missing Information",
-                message: "Please fill out all fields to register.",
-                type: "warning",
-                confirmText: "OK"
-            });
-            return
-        }
-        if(password !== confirmPassword) {
-            showAlert({
-                title: "Passwords Do Not Match",
-                message: "Passwords do not match. Please try again.",
-                type: "error",
-                confirmText: "Try Again"
-            });
-            return
-        }
-        setLoading(true)
-        try {
-            await register(email, password)
-            showAlert({
-                title: "Registration Successful!",
-                message: "Your account has been created successfully. Welcome to NS Notes!",
-                type: "success",
-                confirmText: "Continue",
-                onConfirm: () => router.replace('login')
-            });
-        } catch (err: any) {
-            showAlert({
-                title: "Registration Failed",
-                message: err.message || "An error occurred during registration. Please try again.",
-                type: "error",
-                confirmText: "Try Again"
-            });
-            console.error("Registration error:", err)
-        } finally {
-            setLoading(false)
-        }
+  const handleRegister = async () => {
+    // if(email)
+    // password
+    if (isLoading) return
+    if (password !== cPassword) {
+      Alert.alert("Title", "description")
+      return
     }
-    return (
-        <LinearGradient
-            colors={["#fff", "#fff", "#e0eafc", "#19376d"]}
-            style={{ flex: 1 }}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-        >
-            {/* 3D Animated Bubbles */}
-            <Animated.View
-                entering={FadeIn.duration(1200)}
-                style={[
-                  {
-                    position: 'absolute',
-                    top: -height * 0.15,
-                    left: -width * 0.2,
-                    width: width * 0.7,
-                    height: width * 0.7,
-                    borderRadius: width * 0.35,
-                    backgroundColor: '#19376d',
-                    opacity: 0.10,
-                    shadowColor: '#19376d',
-                    shadowOffset: { width: 0, height: 10 },
-                    shadowOpacity: 0.15,
-                    shadowRadius: 30,
-                    zIndex: 0,
-                  },
-                  bubble1Style,
-                ]}
-            />
-            <Animated.View
-                entering={FadeIn.delay(400).duration(1500)}
-                style={[
-                  {
-                    position: 'absolute',
-                    bottom: -height * 0.18,
-                    right: -width * 0.18,
-                    width: width * 0.55,
-                    height: width * 0.55,
-                    borderRadius: width * 0.275,
-                    backgroundColor: '#284b8a',
-                    opacity: 0.09,
-                    shadowColor: '#284b8a',
-                    shadowOffset: { width: 0, height: 10 },
-                    shadowOpacity: 0.12,
-                    shadowRadius: 30,
-                    zIndex: 0,
-                  },
-                  bubble2Style,
-                ]}
-            />
-            <KeyboardAvoidingView
-                behavior={Platform.OS === "ios" ? "padding" : undefined}
-                style={{ flex: 1, justifyContent: 'center', alignItems: 'center', zIndex: 1 }}
-            >
-                {/* Logo */}
-                <Animated.View
-                    entering={SlideInUp.springify().damping(12)}
-                    style={{ alignItems: 'center', marginBottom: 48 }}
-                >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                        <Ionicons name="book-outline" size={42} color="#19376d" style={{ marginRight: 8 }} />
-                        <Text style={{ fontSize: 40, fontWeight: 'bold', color: '#19376d', letterSpacing: 2, textShadowColor: '#284b8a', textShadowOffset: { width: 2, height: 2 }, textShadowRadius: 8 }}>NS NOTES</Text>
-                    </View>
-                    <Text style={{ color: '#19376d', fontSize: 18, fontWeight: '500', opacity: 0.7 }}>Create your account</Text>
-                </Animated.View>
-                {/* Register Form */}
-                <View style={{ width: '90%', maxWidth: 400, backgroundColor: 'rgba(255,255,255,0.97)', borderRadius: 24, padding: 28, shadowColor: '#19376d', shadowOpacity: 0.09, shadowRadius: 18, elevation: 8 }}>
-                    <Text style={{ color: '#19376d', fontSize: 22, fontWeight: '700', marginBottom: 18, textAlign: 'center' }}>Register</Text>
-                    <TextInput
-                        style={getInputStyle('email')}
-                        placeholder="Email"
-                        placeholderTextColor="#284b8a"
-                        value={email}
-                        onChangeText={setEmail}
-                        keyboardType="email-address"
-                        autoCapitalize="none"
-                        onFocus={() => setFocusedInput('email')}
-                        onBlur={() => setFocusedInput(null)}
-                    />
-                    <TextInput
-                        style={getInputStyle('password')}
-                        placeholder="Password"
-                        placeholderTextColor="#284b8a"
-                        value={password}
-                        onChangeText={setPassword}
-                        secureTextEntry
-                        onFocus={() => setFocusedInput('password')}
-                        onBlur={() => setFocusedInput(null)}
-                    />
-                    <TextInput
-                        style={getInputStyle('confirm')}
-                        placeholder="Confirm Password"
-                        placeholderTextColor="#284b8a"
-                        value={confirmPassword}
-                        onChangeText={setConfirmPassword}
-                        secureTextEntry
-                        onFocus={() => setFocusedInput('confirm')}
-                        onBlur={() => setFocusedInput(null)}
-                    />
-                    <Animated.View style={buttonAnimatedStyle}>
-                      <Pressable
-                          style={{ backgroundColor: '#19376d', borderRadius: 14, paddingVertical: 14, marginBottom: 12, shadowColor: '#284b8a', shadowOpacity: 0.21, shadowRadius: 8, elevation: 4 }}
-                          onPressIn={handleButtonPressIn}
-                          onPressOut={handleButtonPressOut}
-                          onPress={handleRegister}
-                      >
-                          <Text style={{ color: 'white', fontSize: 18, fontWeight: 'bold', textAlign: 'center', letterSpacing: 1 }}>
-                              {loading ? <ActivityIndicator color="#fff" /> : 'Register'}
-                          </Text>
-                      </Pressable>
-                    </Animated.View>
-                    {/* Social Sign-in Options */}
-                    <View style={{ width: '100%', alignItems: 'center', marginTop: 12, marginBottom: 8 }}>
-                      <Text style={{ color: '#19376d', marginBottom: 8, fontWeight: '600' }}>Or sign up with</Text>
-                      <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 16 }}>
-                        <Pressable
-                          style={{ backgroundColor: '#fff', borderRadius: 8, padding: 10, marginHorizontal: 4, borderWidth: 1, borderColor: '#e0eafc', elevation: 2 }}
-                          onPress={() => showAlert({
-                            title: "Google Sign-Up",
-                            message: "This feature is coming soon! Stay tuned for updates.",
-                            type: "info",
-                            confirmText: "Got it"
-                          })}
-                        >
-                          <FontAwesome name="google" size={24} color="#EA4335" />
-                        </Pressable>
-                        <Pressable
-                          style={{ backgroundColor: '#fff', borderRadius: 8, padding: 10, marginHorizontal: 4, borderWidth: 1, borderColor: '#e0eafc', elevation: 2 }}
-                          onPress={() => showAlert({
-                            title: "Facebook Sign-Up",
-                            message: "This feature is coming soon! Stay tuned for updates.",
-                            type: "info",
-                            confirmText: "Got it"
-                          })}
-                        >
-                          <FontAwesome name="facebook" size={24} color="#1877F3" />
-                        </Pressable>
-                        <Pressable
-                          style={{ backgroundColor: '#fff', borderRadius: 8, padding: 10, marginHorizontal: 4, borderWidth: 1, borderColor: '#e0eafc', elevation: 2 }}
-                          onPress={() => showAlert({
-                            title: "GitHub Sign-Up",
-                            message: "This feature is coming soon! Stay tuned for updates.",
-                            type: "info",
-                            confirmText: "Got it"
-                          })}
-                        >
-                          <FontAwesome name="github" size={24} color="#333" />
-                        </Pressable>
-                      </View>
-                    </View>
-                    {/* Instead of a button, use a link style for navigation */}
-                    <Text
-                        style={{ color: '#19376d', fontSize: 16, fontWeight: '600', textAlign: 'center', marginTop: 8, textDecorationLine: 'underline' }}
-                        onPress={() => router.push("/(auth)/login")}
-                    >
-                        Already have an account? Login
-                    </Text>
-                </View>
-            </KeyboardAvoidingView>
-        </LinearGradient>
-    );
+    setIsLoading(true)
+    await register(email, password)
+      .then((res) => {
+        // const res = await register(email, password)
+        // success
+        router.back()
+      })
+      .catch((err) => {
+        Alert.alert("Registration failed", "Somthing went wrong")
+        console.error(err)
+      })
+      .finally(() => {
+        setIsLoading(false)
+      })
+  }
+
+  return (
+    <LinearGradient
+      colors={isDarkMode ? ["#0a0a0a", "#111827", "#1f2937"] : ["#FFF7ED", "#FFFBEB", "#fde68a"]}
+      style={{ flex: 1 }}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+    >
+      {/* Theme Toggle */}
+      <View style={{ position: 'absolute', top: 48, right: 20, zIndex: 2, flexDirection: 'row', alignItems: 'center' }}>
+        <Text style={{ color: isDarkMode ? '#fff' : '#7c2d12', fontWeight: '700', marginRight: 8 }}>{isDarkMode ? 'Dark' : 'Light'}</Text>
+        <Pressable onPress={toggleTheme} style={{ backgroundColor: isDarkMode ? '#374151' : '#F59E0B', borderRadius: 16, padding: 8 }}>
+          <Ionicons name={isDarkMode ? 'sunny' : 'moon'} size={18} color={isDarkMode ? '#F59E0B' : '#fff'} />
+        </Pressable>
+      </View>
+
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }}>
+        {/* Header */}
+        <View style={{ alignItems: 'center', marginBottom: 32 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+            <Ionicons name="person-add-outline" size={40} color={isDarkMode ? '#F59E0B' : '#F59E0B'} style={{ marginRight: 8 }} />
+            <Text style={{ fontSize: 36, fontWeight: 'bold', color: isDarkMode ? '#fff' : '#7c2d12', letterSpacing: 1 }}>Create Account</Text>
+          </View>
+          <Text style={{ color: isDarkMode ? '#e5e7eb' : '#7c2d12', opacity: 0.8 }}>Join NS Notes in a few seconds</Text>
+        </View>
+
+        {/* Card */}
+        <View style={{ width: '90%', maxWidth: 420, backgroundColor: isDarkMode ? 'rgba(31,31,31,0.9)' : 'rgba(255,255,255,0.95)', borderRadius: 20, padding: 24, shadowColor: '#F59E0B', shadowOpacity: 0.12, shadowRadius: 18, elevation: 8 }}>
+          <Text style={{ color: isDarkMode ? '#F59E0B' : '#7c2d12', fontSize: 20, fontWeight: '700', marginBottom: 16, textAlign: 'center' }}>Register</Text>
+          <TextInput
+            placeholder="Email"
+            placeholderTextColor={isDarkMode ? '#9ca3af' : '#7c2d12'}
+            value={email}
+            onChangeText={setEmail}
+            style={{ backgroundColor: isDarkMode ? '#1f1f1f' : '#fff', color: isDarkMode ? '#fff' : '#111', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: isDarkMode ? '#333' : '#FDE68A', marginBottom: 12 }}
+            autoCapitalize="none"
+            keyboardType="email-address"
+          />
+          <TextInput
+            placeholder="Password"
+            placeholderTextColor={isDarkMode ? '#9ca3af' : '#7c2d12'}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            style={{ backgroundColor: isDarkMode ? '#1f1f1f' : '#fff', color: isDarkMode ? '#fff' : '#111', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: isDarkMode ? '#333' : '#FDE68A', marginBottom: 12 }}
+          />
+          <TextInput
+            placeholder="Confirm password"
+            placeholderTextColor={isDarkMode ? '#9ca3af' : '#7c2d12'}
+            value={cPassword}
+            onChangeText={setCPassword}
+            secureTextEntry
+            style={{ backgroundColor: isDarkMode ? '#1f1f1f' : '#fff', color: isDarkMode ? '#fff' : '#111', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: isDarkMode ? '#333' : '#FDE68A', marginBottom: 8 }}
+          />
+
+          <TouchableOpacity onPress={handleRegister} style={{ backgroundColor: '#F59E0B', paddingVertical: 12, borderRadius: 12, marginTop: 6 }}>
+            {isLoading ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={{ color: '#fff', textAlign: 'center', fontSize: 18, fontWeight: '700' }}>Register</Text>
+            )}
+          </TouchableOpacity>
+
+          <Pressable onPress={() => router.back()} style={{ paddingVertical: 12 }}>
+            <Text style={{ color: isDarkMode ? '#F59E0B' : '#7c2d12', textAlign: 'center', fontWeight: '600', textDecorationLine: 'underline' }}>
+              Already have an account? Login
+            </Text>
+          </Pressable>
+        </View>
+      </KeyboardAvoidingView>
+    </LinearGradient>
+  )
 }
 
 export default Register

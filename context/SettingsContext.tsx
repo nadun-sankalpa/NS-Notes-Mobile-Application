@@ -1,67 +1,43 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, useContext, useMemo, useState, ReactNode } from 'react';
 
-export type FontOption = 'System' | 'SpaceMono';
-
-interface Settings {
+type Settings = {
   defaultFontSize: number;
-  defaultFont: FontOption;
+  defaultFont: 'System' | 'SpaceMono';
   confirmDelete: boolean;
-  defaultFontScale: number;
-  confirmDeleteModal: boolean;
-}
+};
 
-interface SettingsContextType {
+type SettingsContextType = {
   settings: Settings;
-  setSetting: <K extends keyof Settings>(key: K, value: Settings[K]) => void;
-  loading: boolean;
-}
-
-const SettingsContext = createContext<SettingsContextType>({} as SettingsContextType);
-
-export const useSettings = () => useContext(SettingsContext);
+  updateSettings: (partial: Partial<Settings>) => void;
+};
 
 const defaultSettings: Settings = {
   defaultFontSize: 16,
   defaultFont: 'System',
   confirmDelete: true,
-  defaultFontScale: 1,
-  confirmDeleteModal: false,
 };
 
-export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const SettingsContext = createContext<SettingsContextType | null>(null);
+
+export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const [settings, setSettings] = useState<Settings>(defaultSettings);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const loadSettings = async () => {
-      try {
-        const savedSettings = await AsyncStorage.getItem('appSettings');
-        if (savedSettings) {
-          setSettings(JSON.parse(savedSettings));
-        }
-      } catch (e) {
-        console.error('Failed to load settings.', e);
-      } finally {
-        setLoading(false);
-      }
+  const value = useMemo(() => ({
+    settings,
+    updateSettings: (partial: Partial<Settings>) => setSettings(prev => ({ ...prev, ...partial })),
+  }), [settings]);
+
+  return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
+};
+
+export const useSettings = (): SettingsContextType => {
+  const ctx = useContext(SettingsContext);
+  if (!ctx) {
+    // Safe defaults even if provider is missing
+    return {
+      settings: defaultSettings,
+      updateSettings: () => {},
     };
-    loadSettings();
-  }, []);
-
-  const setSetting = async <K extends keyof Settings>(key: K, value: Settings[K]) => {
-    try {
-      const newSettings = { ...settings, [key]: value };
-      setSettings(newSettings);
-      await AsyncStorage.setItem('appSettings', JSON.stringify(newSettings));
-    } catch (e) {
-      console.error('Failed to save setting.', e);
-    }
-  };
-
-  return (
-    <SettingsContext.Provider value={{ settings, setSetting, loading }}>
-      {children}
-    </SettingsContext.Provider>
-  );
+  }
+  return ctx;
 };

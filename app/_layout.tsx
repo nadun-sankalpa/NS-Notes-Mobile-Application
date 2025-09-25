@@ -1,26 +1,28 @@
-import { View, Text } from 'react-native'
-import React from 'react'
-import { Slot, Stack, useRouter, useSegments } from 'expo-router'
+import { View, Text } from "react-native"
+import React, { useEffect, useState } from "react"
+import { Slot, Stack } from "expo-router"
 import "./../global.css"
-import { AuthProvider } from '../context/AuthContext';
-import { LoaderProvider } from '@/context/LoaderContext (1)'
-import { BeautifulAlertProvider } from "@/components/BeautifulAlert"
-import { Beautiful3DProvider } from '../context/Beautiful3DContext';
-import { ThemeProvider } from '../context/ThemeContext';
-import { SettingsProvider } from '../context/SettingsContext';
+import { AuthProvider } from "../context/AuthContext"
+import { LoaderProvider } from "../context/LoaderContext"
+import { ThemeProvider } from "../context/ThemeContext"
+import { SettingsProvider } from "../context/SettingsContext"
+import { Beautiful3DProvider } from "../context/Beautiful3DContext"
+import StartupSplash from "../components/StartupSplash"
 
 const RootLayout = () => {
-  // Remove auto-navigation to avoid navigation before mounting error
+  const [showSplash, setShowSplash] = useState(true);
+  useEffect(() => {
+    const t = setTimeout(() => setShowSplash(false), 2000);
+    return () => clearTimeout(t);
+  }, []);
   return (
     <LoaderProvider>
       <AuthProvider>
         <ThemeProvider>
           <SettingsProvider>
-            <BeautifulAlertProvider>
-              <Beautiful3DProvider>
-                <Slot/>
-              </Beautiful3DProvider>
-            </BeautifulAlertProvider>
+            <Beautiful3DProvider>
+              {showSplash ? <StartupSplash /> : <Slot />}
+            </Beautiful3DProvider>
           </SettingsProvider>
         </ThemeProvider>
       </AuthProvider>

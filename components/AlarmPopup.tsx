@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions, StatusBar, Alert } from 'react-native';
 import Animated, { FadeIn, SlideInUp, useSharedValue, useAnimatedStyle, withRepeat, withTiming, withSequence } from 'react-native-reanimated';
 import { FontAwesome } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
+import * as Haptics from 'expo-haptics';
 
 const { width, height } = Dimensions.get('window');
 
@@ -17,6 +18,8 @@ const AlarmPopup: React.FC<AlarmPopupProps> = ({ visible, reminderTitle, onDismi
   const { theme } = useTheme();
   const isDarkMode = theme === 'dark';
   const [currentTime, setCurrentTime] = useState(new Date());
+  const soundRef = useRef<any | null>(null);
+  const hapticIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Animated values for pulsing alarm effect
   const pulseScale = useSharedValue(1);
@@ -51,11 +54,62 @@ const AlarmPopup: React.FC<AlarmPopupProps> = ({ visible, reminderTitle, onDismi
         setCurrentTime(new Date());
       }, 1000);
 
-      return () => clearInterval(timeInterval);
+      // Start gentle haptic pulse every ~2 seconds
+      try {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        hapticIntervalRef.current = setInterval(() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        }, 2000);
+      } catch {}
+
+      // Attempt to load and loop a cute bell tone
+      (async () => {
+        try {
+          // Dynamically import expo-av to avoid bundling error if not installed
+          const ExpoAv = await import('expo-av').catch(() => null as any);
+          if (!ExpoAv || !ExpoAv.Audio) {
+            soundRef.current = null;
+            return;
+          }
+          const sound = new ExpoAv.Audio.Sound();
+          // Load from a small remote bell sound to avoid bundling errors if a local asset is missing
+          // You can replace this URL with your own hosted short bell tone
+          await sound.loadAsync({ uri: 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_bell_1s.mp3?filename=bell-notification-1-199892.mp3' });
+          await sound.setIsLoopingAsync(true);
+          await sound.setVolumeAsync(0.7);
+          const status: any = await sound.getStatusAsync();
+          if (status?.isLoaded) await sound.playAsync();
+          soundRef.current = sound;
+        } catch (e) {
+          // If asset missing or fails to load, fail silently; system notification sound will still play
+          soundRef.current = null;
+        }
+      })();
+
+      return () => {
+        clearInterval(timeInterval);
+      };
     } else {
       // Stop animations when not visible
       pulseScale.value = withTiming(1);
       bellRotation.value = withTiming(0);
+
+      // Stop haptics
+      if (hapticIntervalRef.current) {
+        clearInterval(hapticIntervalRef.current);
+        hapticIntervalRef.current = null;
+      }
+
+      // Stop and unload sound
+      (async () => {
+        try {
+          if (soundRef.current) {
+            await soundRef.current.stopAsync().catch(() => {});
+            await soundRef.current.unloadAsync().catch(() => {});
+          }
+        } catch {}
+        soundRef.current = null;
+      })();
     }
   }, [visible]);
 
@@ -83,6 +137,21 @@ const AlarmPopup: React.FC<AlarmPopupProps> = ({ visible, reminderTitle, onDismi
   };
 
   if (!visible) return null;
+
+  const handleDismiss = async () => {
+    try {
+      if (hapticIntervalRef.current) {
+        clearInterval(hapticIntervalRef.current);
+        hapticIntervalRef.current = null;
+      }
+      if (soundRef.current) {
+        await soundRef.current.stopAsync().catch(() => {});
+        await soundRef.current.unloadAsync().catch(() => {});
+        soundRef.current = null;
+      }
+    } catch {}
+    onDismiss();
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: isDarkMode ? '#000000' : '#1a1a2e' }]}>
@@ -146,7 +215,7 @@ const AlarmPopup: React.FC<AlarmPopupProps> = ({ visible, reminderTitle, onDismi
         {/* Dismiss Button */}
         <TouchableOpacity 
           style={[styles.dismissButton, { backgroundColor: '#ff6b6b' }]}
-          onPress={onDismiss}
+          onPress={handleDismiss}
         >
           <FontAwesome name="times" size={24} color="#ffffff" style={{ marginRight: 10 }} />
           <Text style={[styles.dismissButtonText, { color: '#ffffff' }]}>Dismiss</Text>

@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Notifications from 'expo-notifications';
 import * as Application from 'expo-application';
+import { useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../../context/AuthContext';
 import { useBeautiful3D } from '../../../context/Beautiful3DContext';
 import { createReminder, getAllRemindersByUserId, deleteReminder as deleteReminderFromFirebase, Reminder as FirebaseReminder, updateReminder } from '../../../services/reminderService';
@@ -36,8 +37,10 @@ interface Reminder {
 const RemindersScreen = () => {
   const { theme } = useTheme();
   const { user } = useAuth();
-  const { showErrorAlert, showSuccessAlert, showWarningAlert, showConfirmAlert, setLoading: setBeautiful3DLoading } = useBeautiful3D();
+  // Only showAlert/showToast are provided by Beautiful3DContext in this project
+  const { showAlert, showToast } = useBeautiful3D();
   const isDarkMode = theme === 'dark';
+  const params = useLocalSearchParams<{ title?: string }>();
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [reminderTitle, setReminderTitle] = useState('');
@@ -59,6 +62,38 @@ const RemindersScreen = () => {
     bubble1Scale.value = withRepeat(withTiming(1.12, { duration: 2200 }), -1, true);
     bubble2Scale.value = withRepeat(withTiming(1.08, { duration: 1800 }), -1, true);
   }, []);
+
+  // Prefill reminder title from route params when navigating from Tasks list
+  useEffect(() => {
+    if (params?.title && typeof params.title === 'string') {
+      try {
+        const decoded = decodeURIComponent(params.title);
+        setReminderTitle(decoded);
+      } catch (_) {
+        setReminderTitle(params.title);
+      }
+    }
+  }, [params?.title]);
+
+  const setupAndroidNotificationChannel = async () => {
+    if (Platform.OS !== 'android') return;
+    try {
+      await Notifications.setNotificationChannelAsync('reminders', {
+        name: 'Reminders',
+        importance: Notifications.AndroidImportance.MAX,
+        sound: 'default',
+        enableVibrate: true,
+        lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+        bypassDnd: false,
+        vibrationPattern: [0, 500, 500, 500],
+        description: 'Reminder alerts and alarms',
+        showBadge: true,
+      });
+      console.log('✅ Android notification channel configured');
+    } catch (e) {
+      console.log('Failed to set Android notification channel', e);
+    }
+  };
   const bubble1Style = useAnimatedStyle(() => ({ transform: [{ scale: bubble1Scale.value }] }));
   const bubble2Style = useAnimatedStyle(() => ({ transform: [{ scale: bubble2Scale.value }] }));
 
@@ -66,15 +101,28 @@ const RemindersScreen = () => {
     loadReminders();
     requestNotificationPermissions();
     setupNotificationListeners();
+    setupAndroidNotificationChannel();
 
     return () => {
       // Clean up notification listeners
-      if (notificationListener.current) {
-        Notifications.removeNotificationSubscription(notificationListener.current);
-      }
-      if (responseListener.current) {
-        Notifications.removeNotificationSubscription(responseListener.current);
-      }
+      try {
+        if (notificationListener.current?.remove) {
+          notificationListener.current.remove();
+        } else if (notificationListener.current) {
+          // Fallback for older SDKs
+          // @ts-ignore
+          Notifications.removeNotificationSubscription?.(notificationListener.current);
+        }
+      } catch (_) {}
+      try {
+        if (responseListener.current?.remove) {
+          responseListener.current.remove();
+        } else if (responseListener.current) {
+          // Fallback for older SDKs
+          // @ts-ignore
+          Notifications.removeNotificationSubscription?.(responseListener.current);
+        }
+      } catch (_) {}
     };
   }, []);
 
@@ -326,7 +374,7 @@ const RemindersScreen = () => {
       
     } catch (error) {
       console.error('❌ Debug error:', error);
-      Alert.alert('Debug Error', error.message);
+      Alert.alert('Debug Error', (error as any)?.message || 'Unknown error');
     }
   };
 
@@ -392,25 +440,61 @@ const RemindersScreen = () => {
       }
 
       console.log('⏰ Scheduling notification for:', reminder.date.toISOString(), 'Current time:', now.toISOString());
-      
-      // Schedule a local notification with sound alert like a real phone alarm
-      const notificationId = await Notifications.scheduleNotificationAsync({
-        content: {
-          title: '🔔 Reminder Alert',
-          body: reminder.title,
-          sound: 'default', // This plays the default notification sound
-          priority: Notifications.AndroidNotificationPriority.HIGH,
-          vibrate: [0, 250, 250, 250], // Vibration pattern
-          data: {
-            reminderId: reminder.id,
-            reminderTitle: reminder.title,
+      // Prefer Notifee on Android for full-screen alarm over other apps
+      let notificationId: string | null = null;
+      try {
+        const notifee: any = Platform.OS === 'android' ? await import('@notifee/react-native').catch(() => null as any) : null;
+        if (notifee) {
+          // Ensure channel exists
+          const channelId = await notifee.createChannel({
+            id: 'alarm-channel',
+            name: 'Alarms',
+            sound: 'bell_cute', // uses android raw resource if present; otherwise default
+            importance: notifee.AndroidImportance.HIGH,
+            vibration: true,
+            bypassDnd: true,
+          });
+          const trigger = {
+            type: notifee.TriggerType.TIMESTAMP,
+            timestamp: reminder.date.getTime(),
+            alarmManager: { allowWhileIdle: true },
+          };
+          await notifee.createTriggerNotification(
+            {
+              id: `${reminder.date.getTime()}-${Math.random()}`,
+              title: '🔔 Reminder Alert',
+              body: reminder.title,
+              android: {
+                channelId,
+                category: notifee.AndroidCategory.ALARM,
+                fullScreenAction: { id: 'default' },
+                pressAction: { id: 'default' },
+                importance: notifee.AndroidImportance.HIGH,
+              },
+              data: { kind: 'reminder', title: reminder.title },
+            },
+            trigger
+          );
+          notificationId = 'notifee'; // Notifee uses its own IDs; store a placeholder
+        }
+      } catch (e) {
+        console.log('Notifee not available; falling back to expo-notifications. Error:', e);
+      }
+
+      if (!notificationId) {
+        // Fallback: Expo Notifications (in-app experience; not full screen over other apps)
+        notificationId = await Notifications.scheduleNotificationAsync({
+          content: {
+            title: '🔔 Reminder Alert',
+            body: reminder.title,
+            sound: 'default',
+            priority: Notifications.AndroidNotificationPriority.HIGH,
+            vibrate: [0, 250, 250, 250],
           },
-        },
-        trigger: {
-          date: reminder.date,
-        },
-      });
-      
+          trigger: { date: reminder.date },
+        });
+      }
+
       console.log('✅ Notification scheduled successfully!');
       console.log('   - Notification ID:', notificationId);
       console.log('   - Scheduled for:', reminder.date.toISOString());
@@ -418,46 +502,49 @@ const RemindersScreen = () => {
       console.log('   - Time until trigger:', Math.round((reminder.date.getTime() - now.getTime()) / 1000), 'seconds');
       
       // Verify the notification was scheduled by getting all scheduled notifications
-      const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
-      console.log('📋 Total scheduled notifications:', scheduledNotifications.length);
-      const ourNotification = scheduledNotifications.find(n => n.identifier === notificationId);
-      if (ourNotification) {
-        console.log('✅ Verified: Our notification is in the scheduled list');
-      } else {
-        console.log('❌ Warning: Our notification was not found in scheduled list');
-      }
+      try {
+        const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
+        console.log('📋 Total scheduled notifications:', scheduledNotifications.length);
+        const ourNotification = scheduledNotifications.find(n => n.identifier === notificationId);
+        if (ourNotification) {
+          console.log('✅ Verified: Our notification is in the scheduled list');
+        } else {
+          console.log('ℹ️ Not using Expo scheduler or notification not found in Expo list (likely Notifee).');
+        }
+      } catch {}
       
       // Show confirmation that the alarm is set
-      showSuccessAlert(
-        '🔔 Reminder Set!', 
-        `You'll get a sound alert for "${reminder.title}" on ${reminder.date.toLocaleDateString()} at ${reminder.date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}\n\n📱 Your phone will play a sound and vibrate when the time comes!\n\nNotification ID: ${notificationId}`
-      );
+      showAlert({
+        title: '🔔 Reminder Set!',
+        message: `You'll get a sound alert for "${reminder.title}" on ${reminder.date.toLocaleDateString()} at ${reminder.date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}\n\n📱 Your phone will play a sound and vibrate when the time comes!\n\nNotification ID: ${notificationId}`,
+        type: 'success',
+      });
       
       return notificationId;
     } catch (error) {
       console.error('❌ Failed to schedule notification:', error);
-      showErrorAlert('Error', 'Failed to schedule reminder alert. Please check notification permissions.');
+      showAlert({ title: 'Error', message: 'Failed to schedule reminder alert. Please check notification permissions.', type: 'error' });
       return null;
     }
   };
 
   const handleAddReminder = async () => {
     if (!reminderTitle.trim()) {
-      showErrorAlert('Error', 'Please enter a reminder title.');
+      showAlert({ title: 'Error', message: 'Please enter a reminder title.', type: 'error' });
       return;
     }
 
     if (selectedDate <= new Date()) {
-      showErrorAlert('Error', 'Please select a future date and time.');
+      showAlert({ title: 'Error', message: 'Please select a future date and time.', type: 'error' });
       return;
     }
 
     if (!user?.uid) {
-      showErrorAlert('Error', 'User not authenticated.');
+      showAlert({ title: 'Error', message: 'User not authenticated.', type: 'error' });
       return;
     }
 
-    setBeautiful3DLoading(true, { text: 'Creating reminder...', size: 'medium' });
+    setLoading(true);
     try {
       // Create temporary reminder for notification scheduling
       const tempReminder: Reminder = {
@@ -469,25 +556,28 @@ const RemindersScreen = () => {
       // Schedule the notification first
       const notificationId = await scheduleNotification(tempReminder);
 
-      // Prepare Firebase reminder data
+      // Prepare Firebase reminder data (omit undefined fields)
       const firebaseReminderData: Omit<FirebaseReminder, 'id'> = {
         title: reminderTitle,
         date: selectedDate,
-        notificationId: notificationId || undefined,
         userId: user.uid,
-        createdAt: Date.now(),
-      };
+      } as any;
+      if (notificationId) {
+        (firebaseReminderData as any).notificationId = notificationId;
+      }
 
       // Save to Firebase
       const firebaseId = await createReminder(firebaseReminderData);
 
       // Create the final reminder object with Firebase ID
-      const newReminder: Reminder = {
+      const newReminderBase: Reminder = {
         id: firebaseId,
         title: reminderTitle,
         date: selectedDate,
-        notificationId: notificationId || undefined,
-      };
+      } as Reminder;
+      const newReminder: Reminder = notificationId
+        ? { ...newReminderBase, notificationId }
+        : newReminderBase;
 
       // Update local state and storage
       const updatedReminders = [...reminders, newReminder].sort((a, b) => a.date.getTime() - b.date.getTime());
@@ -496,23 +586,25 @@ const RemindersScreen = () => {
       setShowAddModal(false);
       setReminderTitle('');
       setSelectedDate(new Date());
-      
-      showSuccessAlert(
-        '✅ Reminder Saved!', 
-        `Your reminder has been saved to the cloud and you'll get a sound alert on ${selectedDate.toLocaleDateString()} at ${selectedDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`
-      );
+      showAlert({ title: 'Success', message: 'Reminder created and scheduled!', type: 'success' });
     } catch (error) {
       console.error('Failed to create reminder:', error);
-      showErrorAlert('Error', 'Failed to set reminder. Please try again.');
+      showAlert({ title: 'Error', message: 'Failed to create reminder. Please try again.', type: 'error' });
+    } finally {
+      setLoading(false);
     }
-    setBeautiful3DLoading(false);
   };
 
   const handleDeleteReminder = async (reminder: Reminder) => {
-    showConfirmAlert(
+    Alert.alert(
       'Delete Reminder',
-      'Are you sure you want to delete this reminder? It will be removed from the cloud and the scheduled alarm will be cancelled.',
-      async () => {
+      `Are you sure you want to delete "${reminder.title}"? It will also cancel the scheduled alarm.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
             try {
               // Cancel the scheduled notification if it exists
               if (reminder.notificationId) {
@@ -528,12 +620,14 @@ const RemindersScreen = () => {
               const updatedReminders = reminders.filter(r => r.id !== reminder.id);
               await saveReminders(updatedReminders);
 
-              showSuccessAlert('✅ Deleted', 'Reminder has been deleted from the cloud and alarm cancelled.');
+              showToast({ message: 'Reminder deleted', type: 'success' });
             } catch (error) {
               console.error('Failed to delete reminder:', error);
-              showErrorAlert('Error', 'Failed to delete reminder. Please try again.');
+              showAlert({ title: 'Error', message: 'Failed to delete reminder. Please try again.', type: 'error' });
             }
-      }
+          },
+        },
+      ]
     );
   };
 
@@ -687,7 +781,7 @@ const getStyles = (isDarkMode: boolean) => StyleSheet.create({
     width: width * 0.5,
     height: width * 0.5,
     borderRadius: width * 0.25,
-    backgroundColor: '#000080',
+    backgroundColor: '#FBBF24',
     opacity: 0.08,
     zIndex: 0,
   },
@@ -702,7 +796,7 @@ const getStyles = (isDarkMode: boolean) => StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: isDarkMode ? '#fff' : '#19376d',
+    color: isDarkMode ? '#fff' : '#F59E0B',
   },
   headerButtons: {
     flexDirection: 'row',
@@ -721,7 +815,7 @@ const getStyles = (isDarkMode: boolean) => StyleSheet.create({
     elevation: 3,
   },
   addButton: {
-    backgroundColor: '#19376d',
+    backgroundColor: '#F59E0B',
     width: 50,
     height: 50,
     borderRadius: 25,
@@ -746,7 +840,7 @@ const getStyles = (isDarkMode: boolean) => StyleSheet.create({
   emptyText: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: isDarkMode ? '#fff' : '#19376d',
+    color: isDarkMode ? '#fff' : '#F59E0B',
     marginTop: 20,
   },
   emptySubText: {
@@ -774,7 +868,7 @@ const getStyles = (isDarkMode: boolean) => StyleSheet.create({
   reminderTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: isDarkMode ? '#fff' : '#19376d',
+    color: isDarkMode ? '#fff' : '#F59E0B',
     marginBottom: 4,
   },
   reminderDate: {
@@ -799,7 +893,7 @@ const getStyles = (isDarkMode: boolean) => StyleSheet.create({
   modalTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: isDarkMode ? '#fff' : '#19376d',
+    color: isDarkMode ? '#fff' : '#F59E0B',
     marginBottom: 20,
     textAlign: 'center',
   },
@@ -834,14 +928,14 @@ const getStyles = (isDarkMode: boolean) => StyleSheet.create({
   },
   dateTimeValue: {
     fontSize: 16,
-    color: isDarkMode ? '#fff' : '#19376d',
+    color: isDarkMode ? '#fff' : '#F59E0B',
     fontWeight: '600',
   },
   reminderInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    backgroundColor: isDarkMode ? '#1a1a1a' : '#f0f9ff',
+    backgroundColor: isDarkMode ? '#1a1a1a' : '#FFFBEB',
     borderRadius: 8,
     marginBottom: 20,
     borderWidth: 1,

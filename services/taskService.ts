@@ -1,67 +1,82 @@
-import { Task } from "@/types/task";
-import api from "./config/api";
-import {addDoc, collection, getDocs, updateDoc , getDoc, query, where} from "firebase/firestore";
-import { db } from "@/firebase";
-import { deleteDoc, doc } from "firebase/firestore";
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  updateDoc,
+  where
+} from "firebase/firestore"
+import api from "./config/api"
+import { Task } from "@/types/task"
+import { db } from "@/firebase"
 
-// export const getTasks = async () => {
-//     const res = await api.get("/task");
-//     return res.data
-
-// };
-
-// export const createTask = async (task: any) => {
-//     const res = await api.post("/task", task);
-//     return res.data
-// };
-
+// for refer to collection
 export const taskColRef = collection(db, "tasks")
-//firebase firestore
+
+// firebase firestore
 export const createTask = async (task: Task) => {
-    const docRef = await addDoc(taskColRef, task);
-    return docRef.id
+  const docRef = await addDoc(taskColRef, task)
+  return docRef.id
 }
 
 export const updateTask = async (id: string, task: Task) => {
-    const docRef = doc(db, "tasks", id)
-    const {id: _id, ...taskData} = task
-    return await updateDoc(docRef, taskData)
-}
-
-export const getAllTasks = async () => {
-    const snapShot = await getDocs(taskColRef)
-    const taskList : Task[] = snapShot.docs.map((taskRef) =>({
-        id: taskRef.id,
-        ...taskRef.data()
-    }
-    )) as Task[]
-    return taskList
-}
-
-export const getTaskById = async (id: string) => {
-    const docRef = doc(db, "tasks", id)
-    const snapShot = await getDoc(docRef)
-    return snapShot.data()
-}
-
-export const getAllTasksByUserId = async (userId: string) => {
-    const q = query(taskColRef, where("userId", "==", userId))
-    const snapShot = await getDocs(q)
-    const taskList : Task[] = snapShot.docs.map((taskRef) =>({
-        id: taskRef.id,
-        ...taskRef.data()
-    }
-    )) as Task[]
-    return taskList
+  const docRef = doc(db, "tasks", id)
+  const { id: _id, ...taskData } = task
+  return await updateDoc(docRef, taskData)
 }
 
 export const deleteTask = async (id: string) => {
-    try {
-        const docRef = doc(db, "tasks", id);
-        await deleteDoc(docRef);
-        return true;
-    } catch (err) {
-        console.error('Delete error:', err);
-        return false;
-    }
-};
+  const docRef = doc(db, "tasks", id)
+  return await deleteDoc(docRef)
+}
+
+export const getAllTaskData = async () => {
+  const snapshot = await getDocs(taskColRef)
+  const taskList = snapshot.docs.map((taskRef) => ({
+    id: taskRef.id,
+    ...taskRef.data()
+  })) as Task[]
+  return taskList
+}
+
+export const getTaskById = async (id: string) => {
+  const taskDocRef = doc(db, "tasks", id)
+  const snapshot = await getDoc(taskDocRef)
+  const task = snapshot.exists()
+    ? ({ id: snapshot.id, ...snapshot.data() } as Task)
+    : null
+  return task
+}
+
+export const getAllTaskByUserId = async (userId: string) => {
+  const q = query(taskColRef, where("userId", "==", userId))
+
+  const querySnapshot = await getDocs(q)
+  const taskList = querySnapshot.docs.map((taskRef) => ({
+    id: taskRef.id,
+    ...taskRef.data()
+  })) as Task[]
+  return taskList
+}
+
+// Backwards compatibility alias: some screens import `getAllTasksByUserId` (plural)
+export const getAllTasksByUserId = getAllTaskByUserId
+
+// ================================================================
+// axios with mock server api intrigation
+export const getAllTask = async () => {
+  const res = await api.get("/task")
+  return res.data
+}
+
+// Backwards compatibility alias for API-based fetchers
+// Some screens import `getAllTasks` (plural). Keep both exports pointing to the same implementation.
+export const getAllTasks = getAllTask
+
+export const addTask = async (task: any) => {
+  const res = await api.post("/task", task)
+  return res.data
+}

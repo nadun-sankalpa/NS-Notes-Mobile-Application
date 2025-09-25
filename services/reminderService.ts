@@ -1,85 +1,76 @@
-import { collection, addDoc, getDocs, deleteDoc, doc, query, where, orderBy, updateDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { addDoc, collection, deleteDoc, doc, getDocs, getDoc, query, updateDoc, where, Timestamp } from 'firebase/firestore';
+import { db } from '@/firebase';
 
 export interface Reminder {
   id?: string;
-  title: string;
-  date: Date;
-  notificationId?: string;
   userId: string;
-  createdAt: number;
+  title: string;
+  date: Date; // stored in Firestore as Timestamp, but exposed as Date in app
+  notificationId?: string;
 }
 
-// Create a new reminder in Firebase
-export const createReminder = async (reminderData: Omit<Reminder, 'id'>) => {
-  try {
-    const docRef = await addDoc(collection(db, 'reminders'), {
-      ...reminderData,
-      date: reminderData.date.toISOString(), // Convert Date to string for Firebase
-    });
-    console.log('✅ Reminder saved to Firebase with ID:', docRef.id);
-    return docRef.id;
-  } catch (error) {
-    console.error('❌ Error creating reminder in Firebase:', error);
-    throw error;
-  }
+// Firestore collection reference
+export const reminderColRef = collection(db, 'reminders');
+
+// Create a reminder
+export const createReminder = async (reminder: Reminder): Promise<string> => {
+  const { id: _id, ...data } = reminder;
+  const toSave = {
+    ...data,
+    date: Timestamp.fromDate(reminder.date),
+  };
+  const docRef = await addDoc(reminderColRef, toSave);
+  return docRef.id;
 };
 
-// Get all reminders for a specific user from Firebase
+// Get reminders by userId
 export const getAllRemindersByUserId = async (userId: string): Promise<Reminder[]> => {
-  try {
-    const q = query(
-      collection(db, 'reminders'),
-      where('userId', '==', userId),
-      orderBy('date', 'asc')
-    );
-    
-    const querySnapshot = await getDocs(q);
-    const reminders: Reminder[] = [];
-    
-    querySnapshot.forEach((doc) => {
-      const data = doc.data();
-      reminders.push({
-        id: doc.id,
-        title: data.title,
-        date: new Date(data.date), // Convert string back to Date
-        notificationId: data.notificationId,
-        userId: data.userId,
-        createdAt: data.createdAt,
-      });
-    });
-    
-    console.log('✅ Loaded', reminders.length, 'reminders from Firebase');
-    return reminders;
-  } catch (error) {
-    console.error('❌ Error fetching reminders from Firebase:', error);
-    throw error;
-  }
+  const q = query(reminderColRef, where('userId', '==', userId));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((d) => {
+    const data = d.data() as any;
+    const dateVal = data.date instanceof Timestamp ? data.date.toDate() : new Date(data.date);
+    return {
+      id: d.id,
+      userId: data.userId,
+      title: data.title,
+      date: dateVal,
+      notificationId: data.notificationId,
+    } as Reminder;
+  });
 };
 
-// Delete a reminder from Firebase
-export const deleteReminder = async (reminderId: string) => {
-  try {
-    await deleteDoc(doc(db, 'reminders', reminderId));
-    console.log('✅ Reminder deleted from Firebase:', reminderId);
-  } catch (error) {
-    console.error('❌ Error deleting reminder from Firebase:', error);
-    throw error;
-  }
+// Get single reminder
+export const getReminderById = async (id: string): Promise<Reminder | null> => {
+  const ref = doc(db, 'reminders', id);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) return null;
+  const data = snap.data() as any;
+  const dateVal = data.date instanceof Timestamp ? data.date.toDate() : new Date(data.date);
+  return {
+    id: snap.id,
+    userId: data.userId,
+    title: data.title,
+    date: dateVal,
+    notificationId: data.notificationId,
+  } as Reminder;
 };
 
-// Update a reminder in Firebase
-export const updateReminder = async (reminderId: string, reminderData: Partial<Reminder>) => {
-  try {
-    const updateData = { ...reminderData };
-    if (updateData.date) {
-      updateData.date = reminderData.date!.toISOString() as any; // Convert Date to string
-    }
-    
-    await updateDoc(doc(db, 'reminders', reminderId), updateData);
-    console.log('✅ Reminder updated in Firebase:', reminderId);
-  } catch (error) {
-    console.error('❌ Error updating reminder in Firebase:', error);
-    throw error;
+// Update reminder (partial updates allowed)
+export const updateReminder = async (
+  id: string,
+  updates: Partial<Reminder>
+): Promise<void> => {
+  const ref = doc(db, 'reminders', id);
+  const payload: any = { ...updates };
+  if (updates.date) {
+    payload.date = Timestamp.fromDate(updates.date);
   }
+  await updateDoc(ref, payload);
+};
+
+// Delete reminder
+export const deleteReminder = async (id: string): Promise<void> => {
+  const ref = doc(db, 'reminders', id);
+  await deleteDoc(ref);
 };

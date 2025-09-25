@@ -7,18 +7,25 @@
     "icon": "./assets/images/icon.png",
     "scheme": "amdday01",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.nadun25.nsnotesapp"
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "This app needs access to the microphone for voice typing.",
+        "NSSpeechRecognitionUsageDescription": "This app uses speech recognition to convert your speech to text."
+      }
     },
     "android": {
-      "package": "com.nadun25.nsnotesapp",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "RECORD_AUDIO",
+        "POST_NOTIFICATIONS",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -36,24 +43,7 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "manifestAttributes": {
-              "xmlns:tools": "http://schemas.android.com/tools"
-            },
-            "gradleProperties": {
-              "android.useAndroidX": true,
-              "android.enableJetifier": true
-            },
-            "manifestApplicationAttributes": {
-              "android:appComponentFactory": "androidx.core.app.CoreComponentFactory",
-              "tools:replace": "android:appComponentFactory"
-            }
-          }
-        }
-      ]
+      "@react-native-voice/voice"
     ],
     "experiments": {
       "typedRoutes": true

@@ -4,6 +4,7 @@ import {
   Text,
   Modal,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   Animated,
   Dimensions,
   StyleSheet,
@@ -152,22 +153,31 @@ export const Beautiful3DAlert: React.FC<Beautiful3DAlertProps> = ({
     });
   };
 
+  const canTapToDismiss = !showCancel; // if there's no cancel, tapping outside will confirm/close
+
   return (
     <Modal
       visible={visible}
       transparent
       animationType="none"
       statusBarTranslucent
+      onRequestClose={canTapToDismiss ? handleConfirm : handleCancel}
     >
-      <Animated.View
-        style={[
-          styles.overlay,
-          {
-            opacity: opacityAnim,
-            backgroundColor: isDarkMode ? 'rgba(0,0,0,0.8)' : 'rgba(0,0,0,0.6)',
-          },
-        ]}
-      >
+      <View style={{ flex: 1 }} pointerEvents="box-none">
+        <TouchableWithoutFeedback onPress={canTapToDismiss ? handleConfirm : undefined}>
+          <Animated.View
+            style={[
+              styles.overlay,
+              {
+                opacity: opacityAnim,
+                backgroundColor: isDarkMode ? 'rgba(0,0,0,0.8)' : 'rgba(0,0,0,0.6)',
+              },
+            ]}
+            accessibilityLabel="3d-alert-overlay"
+            accessibilityRole="button"
+          />
+        </TouchableWithoutFeedback>
+
         <Animated.View
           style={[
             styles.alertContainer,
@@ -179,23 +189,25 @@ export const Beautiful3DAlert: React.FC<Beautiful3DAlertProps> = ({
               ],
             },
           ]}
+          accessibilityLabel="3d-alert"
+          pointerEvents="auto"
         >
-          {/* 3D Icon with rotation */}
-          <Animated.View
-            style={[
-              styles.iconContainer,
-              {
-                backgroundColor: typeConfig.color,
-                transform: [{ rotate }],
-              },
-            ]}
-          >
-            <Ionicons
-              name={typeConfig.icon as any}
-              size={40}
-              color="#ffffff"
-            />
-          </Animated.View>
+        {/* 3D Icon with rotation */}
+        <Animated.View
+          style={[
+            styles.iconContainer,
+            {
+              backgroundColor: typeConfig.color,
+              transform: [{ rotate }],
+            },
+          ]}
+        >
+          <Ionicons
+            name={typeConfig.icon as any}
+            size={40}
+            color="#ffffff"
+          />
+        </Animated.View>
 
           {/* Title with 3D text effect */}
           <Text
@@ -266,7 +278,7 @@ export const Beautiful3DAlert: React.FC<Beautiful3DAlertProps> = ({
             </TouchableOpacity>
           </View>
         </Animated.View>
-      </Animated.View>
+      </View>
     </Modal>
   );
 };
