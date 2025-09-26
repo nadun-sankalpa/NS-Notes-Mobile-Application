@@ -11,7 +11,7 @@ import { useTheme } from '../../context/ThemeContext';
 
 const { width, height } = Dimensions.get('window');
 
-// Re-using the imgbb API key and upload function logic from home.tsx
+
 const IMGBB_API_KEY = '0e1db39eeceeb3305730e6efa431f38b';
 
 const uploadImageToImgbb = async (uri: string): Promise<string | null> => {
