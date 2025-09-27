@@ -17,7 +17,7 @@ Smart, fast, and delightful note-taking powered by NS AI. Capture ideas with tex
 ## 🎥 Demo & Download
 
 - ▶️ YouTube Demo: [Youtube Video URl](https://youtu.be/PeZ-Z9Y1RDw?si=shl2u_A8XYSnLl-1)
-- 📦 Android APK: [Add your APK download URL](https://your-apk-download-url)
+- 📦 Android APK: [NS-Notes Apk Link](https://drive.google.com/file/d/1nC9cOtHRSBVe-pJ8VdbKAOO1UHSZ32qP/view?usp=sharing)
 
 Tip: Replace the placeholder URLs above with your actual YouTube and APK links.
 
